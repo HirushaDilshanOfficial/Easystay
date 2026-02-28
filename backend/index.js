@@ -9,6 +9,7 @@ const seedAdmin = require('./utils/adminSeeder');
 // Route files
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 
 // Connect to database, then seed admin
 connectDB().then(() => seedAdmin());

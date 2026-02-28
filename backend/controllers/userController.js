@@ -128,9 +128,15 @@ exports.updateUser = async (req, res, next) => {
         console.log('Update data:', req.body);
         const { name, email, phoneNumber, address, role } = req.body;
 
+        const updateData = { name, email, phoneNumber, address, role };
+
+        if (req.file) {
+            updateData.facePhoto = req.file.path;
+        }
+
         const user = await User.findByIdAndUpdate(
             req.params.id,
-            { name, email, phoneNumber, address, role },
+            updateData,
             { new: true, runValidators: true }
         );
 

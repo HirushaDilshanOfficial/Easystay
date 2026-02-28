@@ -5,6 +5,7 @@ import theme from './utils/theme';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AdminDashboard from './pages/AdminDashboard';
+import BoardingOwnerDashboard from './pages/BoardingOwnerDashboard';
 import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -21,6 +22,7 @@ function App() {
               <ProtectedRoute>
                 <ProtectedRoute.RoleBased
                   admin={<AdminDashboard />}
+                  owner={<BoardingOwnerDashboard />}
                   fallback={<Dashboard />}
                 />
               </ProtectedRoute>

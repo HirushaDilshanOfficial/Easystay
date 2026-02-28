@@ -150,7 +150,11 @@ const sendTokenResponse = (user, statusCode, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            status: user.status
+            status: user.status,
+            phoneNumber: user.phoneNumber,
+            address: user.address,
+            facePhoto: user.facePhoto,
+            createdAt: user.createdAt
         }
     });
 };

@@ -38,7 +38,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
-    AreaChart, Area, XAxis, YAxis, Tooltip as RechartTooltip, ResponsiveContainer, CartesianGrid
+    AreaChart, Area, XAxis, YAxis, Tooltip as RechartTooltip, ResponsiveContainer, CartesianGrid,
+    BarChart, Bar, Cell
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
@@ -143,13 +144,19 @@ function ChartTooltip({ active, payload, label, darkMode }) {
     if (!active || !payload?.length) return null;
     return (
         <div style={{
-            background: darkMode ? 'rgba(15,18,26,0.92)' : '#ffffff',
-            border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0',
-            borderRadius: 12, padding: '10px 16px',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.12)'
+            background: darkMode ? 'rgba(15,18,26,0.8)' : 'rgba(255,255,255,0.8)',
+            border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.05)',
+            borderRadius: 16, padding: '12px 16px',
+            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+            backdropFilter: 'blur(12px)',
         }}>
-            <p className="text-xs mb-1" style={{ color: darkMode ? '#94a3b8' : '#64748b' }}>{label}</p>
-            <p className="text-sm font-bold" style={{ color: '#6366f1' }}>{payload[0].value} users</p>
+            <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: darkMode ? '#64748b' : '#94a3b8' }}>{label}</p>
+            <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full" style={{ background: 'linear-gradient(135deg,#6366f1,#ec4899)' }} />
+                <p className="text-sm font-black" style={{ color: darkMode ? '#f8fafc' : '#1e2937' }}>
+                    {payload[0].value} <span className="text-[11px] font-medium opacity-60">registrations</span>
+                </p>
+            </div>
         </div>
     );
 }
@@ -205,10 +212,13 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
                     {/* Header */}
                     <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: `1px solid ${border}` }}>
                         <div className="flex items-center gap-3">
-                            <Avatar sx={{
-                                width: 44, height: 44, fontSize: 18, fontWeight: 800,
-                                background: 'linear-gradient(135deg,#6366f1,#06b6d4)'
-                            }}>{u.name[0]}</Avatar>
+                            <Avatar
+                                src={u.facePhoto}
+                                sx={{
+                                    width: 44, height: 44, fontSize: 18, fontWeight: 800,
+                                    background: 'linear-gradient(135deg,#6366f1,#06b6d4)'
+                                }}
+                            >{u.name[0]}</Avatar>
                             <div>
                                 <p className="font-black text-base" style={{ color: text }}>{u.name}</p>
                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg" style={{
@@ -304,7 +314,9 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
         name: u?.name || '',
         email: u?.email || '',
         phoneNumber: u?.phoneNumber || '',
-        address: u?.address || ''
+        address: u?.address || '',
+        role: u?.role || '',
+        facePhoto: null
     });
 
     useEffect(() => {
@@ -313,7 +325,9 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
                 name: u.name,
                 email: u.email,
                 phoneNumber: u.phoneNumber || '',
-                address: u.address || ''
+                address: u.address || '',
+                role: u.role || '',
+                facePhoto: null
             });
         }
     }, [u]);
@@ -328,7 +342,19 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave(u._id, formData);
+
+        const data = new FormData();
+        data.append('name', formData.name);
+        data.append('email', formData.email);
+        data.append('phoneNumber', formData.phoneNumber);
+        data.append('address', formData.address);
+        data.append('role', formData.role);
+
+        if (formData.facePhoto) {
+            data.append('facePhoto', formData.facePhoto);
+        }
+
+        onSave(u._id, data);
     };
 
     return (
@@ -398,6 +424,21 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
                                 style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
                             />
                         </div>
+
+                        {u.role === 'BoardingOwner' && (
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Update Face Photo</label>
+                                <div className="flex items-center gap-4 p-3 rounded-xl" style={{ background: inputBg, border: `1px solid ${border}` }}>
+                                    <Avatar src={formData.facePhoto ? URL.createObjectURL(formData.facePhoto) : u.facePhoto} sx={{ width: 44, height: 44 }} />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setFormData({ ...formData, facePhoto: e.target.files[0] })}
+                                        className="text-xs text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-full file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-widest file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100 transition-all"
+                                    />
+                                </div>
+                            </div>
+                        )}
 
                         <div className="pt-4">
                             <motion.button
@@ -779,11 +820,17 @@ const AdminDashboard = () => {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
-        doc.text('EasyStay', 20, 25);
+        doc.text('EasyStay', 20, 22);
 
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        doc.text('Boarding Management System | Admin Report', 20, 32);
+        doc.text('Boarding Management System | Admin Report', 20, 30);
+
+        // Right-aligned Contact Info
+        doc.setFontSize(8);
+        doc.text('New Kandy Road, Malabe', 190, 18, { align: 'right' });
+        doc.text('0772343423', 190, 24, { align: 'right' });
+        doc.text('www.easystay.com', 190, 30, { align: 'right' });
 
         // Report Title
         doc.setTextColor(33, 33, 33);
@@ -1080,37 +1127,70 @@ const AdminDashboard = () => {
 
                             {/* CHART */}
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}
-                                className="rounded-3xl p-6 relative overflow-hidden"
-                                style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: darkMode ? 'none' : '0 10px 40px rgba(79,70,229,0.06)' }}>
-                                {/* Decorative colorful blob for light mode */}
-                                {!darkMode && <div className="absolute -top-24 -right-24 w-60 h-60 bg-pink-400/10 rounded-full blur-3xl pointer-events-none" />}
-                                {!darkMode && <div className="absolute bottom-0 left-1/4 w-72 h-40 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />}
+                                className="rounded-[2rem] p-8 relative overflow-hidden"
+                                style={{
+                                    background: cardBg,
+                                    border: `1px solid ${cardBorder}`,
+                                    boxShadow: darkMode ? '0 20px 50px rgba(0,0,0,0.3)' : '0 10px 40px rgba(0,0,0,0.04)',
+                                }}>
 
-                                <div className="flex items-center justify-between mb-8 relative z-10">
+                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6 mb-10 relative z-10">
                                     <div>
-                                        <h2 className="text-sm font-bold" style={{ color: textPrimary }}>User Growth</h2>
-                                        <p className="text-[11px]" style={{ color: textSecondary }}>Monthly registrations overview</p>
+                                        <h2 className="text-lg font-black tracking-tight" style={{ color: textPrimary }}>User Growth</h2>
+                                        <p className="text-[11px] font-medium text-gray-400 uppercase tracking-widest mt-1">Monthly registrations overview</p>
                                     </div>
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black"
-                                        style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>
-                                        <TrendIcon sx={{ fontSize: 14 }} /> +12.5%
+
+                                    <div className="flex items-center gap-4">
+                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-indigo-500/5 border border-indigo-500/10">
+                                            <p className="text-[10px] font-black text-indigo-500 tracking-tighter flex items-center gap-1">
+                                                <TrendIcon sx={{ fontSize: 12 }} /> +12.5%
+                                            </p>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Growth</p>
+                                        </div>
+                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-pink-500/5 border border-pink-500/10">
+                                            <p className="text-[11px] font-black text-pink-500">Feb</p>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Current</p>
+                                        </div>
+                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
+                                            <p className="text-[11px] font-black text-emerald-500">7 users</p>
+                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Joined</p>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="h-[280px] w-full">
+
+                                <div className="h-[280px] w-full relative z-10">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={stats?.growthData?.length > 0 ? stats.growthData : DUMMY_CHART_DATA}>
-                                            <defs>
-                                                <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor={darkMode ? "#818cf8" : "#6366f1"} stopOpacity={0.4} />
-                                                    <stop offset="95%" stopColor={darkMode ? "#818cf8" : "#ec4899"} stopOpacity={0.05} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} />
-                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: textSecondary, fontSize: 10, fontWeight: 600 }} dy={10} />
-                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: textSecondary, fontSize: 10, fontWeight: 600 }} />
-                                            <RechartTooltip content={<ChartTooltip darkMode={darkMode} cardBg={cardBg} cardBorder={cardBorder} textPrimary={textPrimary} textSecondary={textSecondary} />} />
-                                            <Area type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" animationDuration={1500} />
-                                        </AreaChart>
+                                        <BarChart data={stats?.growthData?.length > 0 ? stats.growthData : DUMMY_CHART_DATA} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
+                                            <CartesianGrid strokeDasharray="8 8" vertical={false} stroke={darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'} />
+                                            <XAxis
+                                                dataKey="name"
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: textSecondary, fontSize: 10, fontWeight: 800 }}
+                                                dy={15}
+                                            />
+                                            <YAxis
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tick={{ fill: textSecondary, fontSize: 10, fontWeight: 800 }}
+                                                ticks={[0, 2, 4, 6, 8]}
+                                                domain={[0, 8]}
+                                            />
+                                            <RechartTooltip content={<ChartTooltip darkMode={darkMode} />} cursor={{ fill: 'transparent' }} />
+                                            <Bar
+                                                dataKey="users"
+                                                radius={[6, 6, 0, 0]}
+                                                barSize={32}
+                                                animationDuration={1500}
+                                            >
+                                                {(stats?.growthData?.length > 0 ? stats.growthData : DUMMY_CHART_DATA).map((entry, index) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={entry.name === 'Feb' ? '#6366f1' : (darkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9')}
+                                                    />
+                                                ))}
+                                            </Bar>
+                                        </BarChart>
                                     </ResponsiveContainer>
                                 </div>
                             </motion.div>
@@ -1192,7 +1272,10 @@ const AdminDashboard = () => {
                                                     >
                                                         <td className="px-5 py-4">
                                                             <div className="flex items-center gap-3">
-                                                                <Avatar sx={{ width: 32, height: 32, fontSize: 12, fontWeight: 700, background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}>
+                                                                <Avatar
+                                                                    src={row.facePhoto}
+                                                                    sx={{ width: 32, height: 32, fontSize: 12, fontWeight: 700, background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}
+                                                                >
                                                                     {row.name[0]}
                                                                 </Avatar>
                                                                 <div>
@@ -1374,7 +1457,10 @@ const AdminDashboard = () => {
                                                         className="hover:bg-white/[0.02] transition-colors">
                                                         <td className="px-5 py-3.5">
                                                             <div className="flex items-center gap-3">
-                                                                <Avatar sx={{ width: 30, height: 30, fontSize: 11, fontWeight: 700, background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}>
+                                                                <Avatar
+                                                                    src={row.facePhoto}
+                                                                    sx={{ width: 30, height: 30, fontSize: 11, fontWeight: 700, background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}
+                                                                >
                                                                     {row.name[0]}
                                                                 </Avatar>
                                                                 <div>
@@ -1514,7 +1600,10 @@ const AdminDashboard = () => {
                                                     >
                                                         <td className="px-5 py-4">
                                                             <div className="flex items-center gap-3">
-                                                                <Avatar sx={{ width: 32, height: 32, fontSize: 12, fontWeight: 700, background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}>
+                                                                <Avatar
+                                                                    src={row.facePhoto}
+                                                                    sx={{ width: 32, height: 32, fontSize: 12, fontWeight: 700, background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}
+                                                                >
                                                                     {row.name[0]}
                                                                 </Avatar>
                                                                 <div>

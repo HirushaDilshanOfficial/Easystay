@@ -27,7 +27,11 @@ const updateUserStatus = async (id, status, rejectionReason = null) => {
 };
 
 const updateUser = async (id, userData) => {
-    const response = await axios.put(`${API_URL}/${id}`, userData, getAuthConfig());
+    const config = getAuthConfig();
+    if (userData instanceof FormData) {
+        config.headers['Content-Type'] = 'multipart/form-data';
+    }
+    const response = await axios.put(`${API_URL}/${id}`, userData, config);
     return response.data;
 };
 

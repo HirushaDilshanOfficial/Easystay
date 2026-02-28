@@ -7,6 +7,7 @@ const {
     deleteUser
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
+const { upload } = require('../middlewares/upload');
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.use(authorize('Admin'));
 router.get('/', getUsers);
 router.get('/stats', getAdminStats);
 router.put('/:id/status', updateUserStatus);
-router.put('/:id', updateUser);
+router.put('/:id', upload.single('facePhoto'), updateUser);
 router.delete('/:id', deleteUser);
 
 module.exports = router;

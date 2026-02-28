@@ -13,11 +13,13 @@ const ProtectedRoute = ({ children }) => {
     return children;
 };
 
-// Sub-component: render admin or fallback based on live role
-ProtectedRoute.RoleBased = function RoleBased({ admin, fallback }) {
+// Sub-component: render admin, owner, or fallback based on live role
+ProtectedRoute.RoleBased = function RoleBased({ admin, owner, fallback }) {
     const userData = authService.getCurrentUser();
     const role = userData?.user?.role;
-    return role === 'Admin' ? admin : fallback;
+    if (role === 'Admin') return admin;
+    if (role === 'BoardingOwner') return owner || fallback;
+    return fallback;
 };
 
 export default ProtectedRoute;

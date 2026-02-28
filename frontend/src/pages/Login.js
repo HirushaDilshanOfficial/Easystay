@@ -45,7 +45,7 @@ const Login = () => {
                             {[
                                 { label: 'Active Boardings', value: '1,200+' },
                                 { label: 'Happy Students', value: '8,500+' },
-                                { label: 'Cities', value: '24' },
+                            
                             ].map((s) => (
                                 <div key={s.label}>
                                     <p className="text-white font-bold text-2xl">{s.value}</p>
@@ -63,8 +63,8 @@ const Login = () => {
                         <div className="flex items-center gap-3 mt-4">
                             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold">A</div>
                             <div>
-                                <p className="text-white text-sm font-semibold">Aisha Perera</p>
-                                <p className="text-purple-300 text-xs">Student, University of Colombo</p>
+                                <p className="text-white text-sm font-semibold">Wethmi Wijethilaka</p>
+                                <p className="text-purple-300 text-xs">Student, University of SLIIT</p>
                             </div>
                         </div>
                     </div>

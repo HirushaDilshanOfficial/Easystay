@@ -28,9 +28,15 @@ import {
     LocationOnOutlined as LocationIcon,
     BadgeOutlined as NicIcon,
     FaceOutlined as FacePhotoIcon,
-    FolderOutlined as FolderIcon
+    FolderOutlined as FolderIcon,
+    EditOutlined as EditIcon,
+    DeleteOutline as DeleteIcon,
+    ReportProblemOutlined as WarningIcon,
+    PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
     AreaChart, Area, XAxis, YAxis, Tooltip as RechartTooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts';
@@ -77,7 +83,7 @@ function useCountUp(target, duration = 1200) {
 // ─────────────────────────────────────────────
 //  Stat Card
 // ─────────────────────────────────────────────
-function StatCard({ label, value, icon: Icon, accent, delay = 0 }) {
+function StatCard({ label, value, icon: Icon, accent, delay = 0, darkMode }) {
     const count = useCountUp(value);
     return (
         <motion.div
@@ -87,29 +93,31 @@ function StatCard({ label, value, icon: Icon, accent, delay = 0 }) {
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
             className="relative rounded-2xl overflow-hidden p-6 cursor-default"
             style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.24)',
+                background: darkMode ? 'rgba(255,255,255,0.04)' : '#ffffff',
+                border: darkMode ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+                boxShadow: darkMode ? '0 8px 32px rgba(0,0,0,0.24)' : '0 2px 12px rgba(0,0,0,0.06)',
             }}
         >
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-2">{label}</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-2" style={{ color: darkMode ? '#94a3b8' : '#64748b' }}>{label}</p>
                     <p className="text-4xl font-black" style={{ background: accent, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        {value !== undefined ? count : <Skeleton width={48} sx={{ bgcolor: 'grey.800' }} />}
+                        {value !== undefined ? count : <Skeleton width={48} sx={{ bgcolor: darkMode ? 'grey.800' : 'grey.200' }} />}
                     </p>
                 </div>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: accent, boxShadow: `0 0 20px ${accent.split(',')[1] || '#6366f1'}44` }}>
-                    <Icon fontSize="small" style={{ color: '#fff' }} />
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+                    style={{ background: darkMode ? accent : `${accent.split(',')[1] || '#6366f1'}15`, border: darkMode ? 'none' : `1px solid ${accent.split(',')[1] || '#6366f1'}30`, boxShadow: darkMode ? `0 0 20px ${accent.split(',')[1] || '#6366f1'}44` : 'none' }}>
+                    <Icon sx={{ fontSize: 24 }} style={{ color: darkMode ? '#fff' : accent.split(',')[1] || '#6366f1' }} />
                 </div>
             </div>
-            <div className="mt-4 flex items-center gap-1">
-                <TrendIcon style={{ fontSize: 14, color: '#22d3ee' }} />
+            <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg w-fit" style={{ background: darkMode ? 'rgba(34,211,238,0.1)' : 'rgba(34,211,238,0.15)' }}>
+                    <TrendIcon style={{ fontSize: 14, color: darkMode ? '#22d3ee' : '#0891b2' }} />
+                    <span className="text-[10px] font-bold tracking-wide" style={{ color: darkMode ? '#22d3ee' : '#0891b2' }}>+12% THIS WEEK</span>
+                </div>
                 <span className="text-xs text-gray-400">Live data</span>
             </div>
-        </motion.div>
+        </motion.div >
     );
 }
 
@@ -121,7 +129,7 @@ function SkeletonRow() {
         <tr>
             {[...Array(5)].map((_, i) => (
                 <td key={i} className="px-5 py-4">
-                    <Skeleton variant="text" sx={{ bgcolor: 'rgba(255,255,255,0.06)', borderRadius: 1 }} />
+                    <Skeleton variant="text" sx={{ bgcolor: 'rgba(100,116,139,0.1)', borderRadius: 1 }} />
                 </td>
             ))}
         </tr>
@@ -131,15 +139,17 @@ function SkeletonRow() {
 // ─────────────────────────────────────────────
 //  Custom Chart Tooltip
 // ─────────────────────────────────────────────
-function ChartTooltip({ active, payload, label }) {
+function ChartTooltip({ active, payload, label, darkMode }) {
     if (!active || !payload?.length) return null;
     return (
         <div style={{
-            background: 'rgba(15,18,26,0.92)', border: '1px solid rgba(255,255,255,0.1)',
-            backdropFilter: 'blur(12px)', borderRadius: 12, padding: '10px 16px'
+            background: darkMode ? 'rgba(15,18,26,0.92)' : '#ffffff',
+            border: darkMode ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0',
+            borderRadius: 12, padding: '10px 16px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.12)'
         }}>
-            <p className="text-xs text-gray-400 mb-1">{label}</p>
-            <p className="text-sm font-bold text-cyan-400">{payload[0].value} users</p>
+            <p className="text-xs mb-1" style={{ color: darkMode ? '#94a3b8' : '#64748b' }}>{label}</p>
+            <p className="text-sm font-bold" style={{ color: '#6366f1' }}>{payload[0].value} users</p>
         </div>
     );
 }
@@ -147,7 +157,7 @@ function ChartTooltip({ active, payload, label }) {
 // ─────────────────────────────────────────────
 //  User Detail Modal
 // ─────────────────────────────────────────────
-function UserDetailModal({ user: u, onClose, darkMode }) {
+function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
     if (!u) return null;
     const modalBg = darkMode ? 'rgba(15,18,26,0.97)' : 'rgba(248,250,252,0.97)';
     const border = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
@@ -258,6 +268,409 @@ function UserDetailModal({ user: u, onClose, darkMode }) {
                             </div>
                         </div>
                     )}
+
+                    {/* Pending Actions */}
+                    {u.status === 'Pending' && (
+                        <div className="px-6 pb-6 pt-2 grid grid-cols-2 gap-3" style={{ borderTop: `1px solid ${border}` }}>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => { onStatusUpdate(u, 'Active'); onClose(); }}
+                                className="py-3 rounded-xl font-bold text-white shadow-lg transition-all flex items-center justify-center gap-2"
+                                style={{ background: 'linear-gradient(135deg,#10b981,#34d399)' }}
+                            >
+                                <ApproveIcon sx={{ fontSize: 18 }} /> Approve Account
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => { onStatusUpdate(u, 'Rejected'); onClose(); }}
+                                className="py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2"
+                                style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.2)' }}
+                            >
+                                <RejectIcon sx={{ fontSize: 18 }} /> Reject Application
+                            </motion.button>
+                        </div>
+                    )}
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
+// ─────────────────────────────────────────────
+//  User Edit Modal
+// ─────────────────────────────────────────────
+function UserEditModal({ user: u, onClose, onSave, darkMode }) {
+    const [formData, setFormData] = useState({
+        name: u?.name || '',
+        email: u?.email || '',
+        phoneNumber: u?.phoneNumber || '',
+        address: u?.address || ''
+    });
+
+    useEffect(() => {
+        if (u) {
+            setFormData({
+                name: u.name,
+                email: u.email,
+                phoneNumber: u.phoneNumber || '',
+                address: u.address || ''
+            });
+        }
+    }, [u]);
+
+    if (!u) return null;
+
+    const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
+    const border = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const text = darkMode ? '#f8fafc' : '#0f172a';
+    const sub = darkMode ? '#94a3b8' : '#64748b';
+    const inputBg = darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)';
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(u._id, formData);
+    };
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(10px)' }}
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.95, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl"
+                    style={{ background: modalBg, border: `1px solid ${border}`, backdropFilter: 'blur(30px)' }}
+                >
+                    <div className="px-6 py-5 border-b" style={{ borderColor: border }}>
+                        <div className="flex items-center justify-between">
+                            <h2 className="text-lg font-black" style={{ color: text }}>Edit User</h2>
+                            <IconButton size="small" onClick={onClose} sx={{ color: sub }}>
+                                <CloseIcon />
+                            </IconButton>
+                        </div>
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Full Name</label>
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Email Address</label>
+                            <input
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Phone Number</label>
+                            <input
+                                type="text"
+                                value={formData.phoneNumber}
+                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Property Address</label>
+                            <textarea
+                                value={formData.address}
+                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all min-h-[80px]"
+                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                            />
+                        </div>
+
+                        <div className="pt-4">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                type="submit"
+                                className="w-full py-3 rounded-xl font-bold text-white shadow-lg transition-all"
+                                style={{ background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}
+                            >
+                                Save Changes
+                            </motion.button>
+                        </div>
+                    </form>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
+// ─────────────────────────────────────────────
+//  Approval Confirmation Modal
+// ─────────────────────────────────────────────
+function ApproveConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
+    if (!u) return null;
+    const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
+    const border = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const text = darkMode ? '#f8fafc' : '#0f172a';
+    const sub = darkMode ? '#94a3b8' : '#64748b';
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)' }}
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ background: modalBg, border: `1px solid ${border}`, backdropFilter: 'blur(40px)' }}
+                >
+                    <div className="p-8 text-center">
+                        <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
+                            <ApproveIcon sx={{ fontSize: 40, color: '#10b981' }} />
+                        </div>
+                        <h2 className="text-xl font-black mb-2" style={{ color: text }}>Approve Account</h2>
+                        <p className="text-sm font-medium mb-8 leading-relaxed" style={{ color: sub }}>
+                            Are you sure you want to approve <span className="font-bold text-emerald-400">{u.name}</span>?
+                            Their account will be activated immediately.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={onClose}
+                                className="py-3 rounded-2xl font-bold text-sm transition-all"
+                                style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', color: text, border: `1px solid ${border}` }}
+                            >
+                                Cancel
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => onConfirm(u._id, 'Active')}
+                                className="py-3 rounded-2xl font-bold text-sm text-white shadow-lg shadow-emerald-500/20"
+                                style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}
+                            >
+                                Approve
+                            </motion.button>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
+// ─────────────────────────────────────────────
+//  Rejection Reason Modal
+// ─────────────────────────────────────────────
+function RejectReasonModal({ user: u, onClose, onConfirm, darkMode }) {
+    const [reason, setReason] = useState('');
+    if (!u) return null;
+
+    const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
+    const border = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const text = darkMode ? '#f8fafc' : '#0f172a';
+    const sub = darkMode ? '#94a3b8' : '#64748b';
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)' }}
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ background: modalBg, border: `1px solid ${border}`, backdropFilter: 'blur(40px)' }}
+                >
+                    <div className="p-8">
+                        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
+                            <RejectIcon sx={{ fontSize: 32, color: '#f87171' }} />
+                        </div>
+                        <h2 className="text-xl font-black mb-1" style={{ color: text }}>Reject Application</h2>
+                        <p className="text-sm font-medium mb-6 leading-relaxed" style={{ color: sub }}>
+                            Please provide a reason for rejecting <span className="font-bold text-red-400">{u.name}'s</span> application.
+                        </p>
+
+                        <div className="mb-8">
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: sub }}>Rejection Reason</label>
+                            <textarea
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="e.g., Documents are unclear or missing..."
+                                className="w-full px-4 py-3 rounded-2xl outline-none transition-all duration-200 min-h-[120px] resize-none text-sm font-medium"
+                                style={{
+                                    background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    border: `1px solid ${border}`,
+                                    color: text
+                                }}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={onClose}
+                                className="py-3 rounded-2xl font-bold text-sm transition-all"
+                                style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', color: text, border: `1px solid ${border}` }}
+                            >
+                                Cancel
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                disabled={!reason.trim()}
+                                onClick={() => onConfirm(u._id, 'Rejected', reason)}
+                                className="py-3 rounded-2xl font-bold text-sm text-white shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
+                                style={{ background: 'linear-gradient(135deg,#f87171,#ef4444)' }}
+                            >
+                                Confirm Rejection
+                            </motion.button>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
+// ─────────────────────────────────────────────
+//  Recent Activity Item
+// ─────────────────────────────────────────────
+function ActivityItem({ activity, cardBorder, textPrimary, textSecondary, darkMode }) {
+    const isNew = (new Date() - new Date(activity.createdAt)) < 24 * 60 * 60 * 1000;
+
+    const getActionText = (role) => {
+        switch (role) {
+            case 'Admin': return 'added a new administrator';
+            case 'BoardingOwner': return 'registered as a boarding owner';
+            case 'Student': return 'joined as a student';
+            default: return 'joined the platform';
+        }
+    };
+
+    return (
+        <div className="flex items-start gap-4 px-5 py-4 transition-all cursor-default"
+            style={{
+                borderBottom: `1px solid ${cardBorder}`,
+            }}
+            onMouseEnter={e => e.currentTarget.style.background = darkMode ? 'rgba(255,255,255,0.02)' : '#f8fafc'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+        >
+            <div className="relative shrink-0">
+                <Avatar sx={{
+                    width: 38, height: 38, fontSize: 14, fontWeight: 700,
+                    background: activity.role === 'Admin' ? 'linear-gradient(135deg,#f87171,#ef4444)' :
+                        activity.role === 'Student' ? 'linear-gradient(135deg,#10b981,#34d399)' :
+                            'linear-gradient(135deg,#6366f1,#818cf8)'
+                }}>
+                    {activity.name[0]}
+                </Avatar>
+                {isNew && (
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-indigo-500 rounded-full border-2"
+                        style={{ borderColor: darkMode ? '#0f121a' : '#ffffff' }} />
+                )}
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold truncate" style={{ color: textPrimary }}>
+                    {activity.name}
+                    <span className="font-normal ml-1" style={{ color: textSecondary, fontSize: 12 }}>{getActionText(activity.role)}</span>
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md"
+                        style={{ background: darkMode ? 'rgba(255,255,255,0.06)' : '#f1f5f9', color: textSecondary }}>
+                        {new Date(activity.createdAt).toLocaleDateString()}
+                    </span>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                        style={{
+                            background: activity.status === 'Active' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)',
+                            color: activity.status === 'Active' ? '#10b981' : '#f59e0b'
+                        }}>
+                        {activity.status}
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────
+//  Delete Confirmation Modal
+// ─────────────────────────────────────────────
+function DeleteConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
+    if (!u) return null;
+
+    const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
+    const border = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const text = darkMode ? '#f8fafc' : '#0f172a';
+    const sub = darkMode ? '#94a3b8' : '#64748b';
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)' }}
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ background: modalBg, border: `1px solid ${border}`, backdropFilter: 'blur(40px)' }}
+                >
+                    <div className="p-8 text-center">
+                        <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6 border border-red-500/20">
+                            <WarningIcon sx={{ fontSize: 40, color: '#f87171' }} />
+                        </div>
+                        <h2 className="text-xl font-black mb-2" style={{ color: text }}>Confirm Deletion</h2>
+                        <p className="text-sm font-medium mb-8 leading-relaxed" style={{ color: sub }}>
+                            Are you sure you want to delete <span className="font-bold text-red-400">{u.name}</span>?
+                            This action is permanent and cannot be undone.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={onClose}
+                                className="py-3 rounded-2xl font-bold text-sm transition-all"
+                                style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', color: text, border: `1px solid ${border}` }}
+                            >
+                                Cancel
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => onConfirm(u._id)}
+                                className="py-3 rounded-2xl font-bold text-sm text-white shadow-lg shadow-red-500/20"
+                                style={{ background: 'linear-gradient(135deg,#f87171,#ef4444)' }}
+                            >
+                                Delete User
+                            </motion.button>
+                        </div>
+                    </div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>
@@ -276,10 +689,35 @@ const AdminDashboard = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [darkMode, setDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
+    // Force light mode on this specific deployment to break out of old cached dark mode state
+    const [darkMode, setDarkMode] = useState(() => {
+        const saved = localStorage.getItem('theme');
+        if (saved === 'dark') return true;
+        // if null or 'light', or to override old cache, we default to false (light mode)
+        return false;
+    });
+
+    // Add an effect to ensure localStorage is synced with the intended default light mode if it was stuck
+    useEffect(() => {
+        if (!darkMode) {
+            localStorage.setItem('theme', 'light');
+        } else {
+            localStorage.setItem('theme', 'dark');
+        }
+    }, [darkMode]);
+
     const [activeNav, setActiveNav] = useState('dashboard');
     const [snackbar, setSnackbar] = useState({ open: false, msg: '', severity: 'success' });
     const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUserEdit, setSelectedUserEdit] = useState(null);
+    const [userToDelete, setUserToDelete] = useState(null);
+    const [userToApprove, setUserToApprove] = useState(null);
+    const [userToReject, setUserToReject] = useState(null);
+
+    // Filter states
+    const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('All');
+    const [statusFilter, setStatusFilter] = useState('All');
 
     useEffect(() => {
         loadAdminData();
@@ -288,6 +726,15 @@ const AdminDashboard = () => {
     useEffect(() => {
         localStorage.setItem('theme', darkMode ? 'dark' : 'light');
     }, [darkMode]);
+
+    // Filtering logic
+    const filteredUsers = users.filter(u => {
+        const matchesSearch = (u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.email?.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesRole = roleFilter === 'All' || u.role === roleFilter;
+        const matchesStatus = statusFilter === 'All' || u.status === statusFilter;
+        return matchesSearch && matchesRole && matchesStatus;
+    });
 
     const loadAdminData = async () => {
         setLoading(true);
@@ -302,13 +749,124 @@ const AdminDashboard = () => {
         }
     };
 
-    const handleUpdateStatus = async (id, status) => {
+    const handleUpdateStatus = async (id, status, reason = null) => {
         try {
-            await userService.updateUserStatus(id, status);
-            setSnackbar({ open: true, msg: `User ${status === 'Active' ? 'approved' : 'rejected'} successfully.`, severity: status === 'Active' ? 'success' : 'warning' });
+            await userService.updateUserStatus(id, status, reason);
+            setSnackbar({
+                open: true,
+                msg: `User ${status === 'Active' ? 'approved' : 'rejected'} successfully.`,
+                severity: status === 'Active' ? 'success' : 'warning'
+            });
+            setUserToApprove(null);
+            setUserToReject(null);
             loadAdminData();
         } catch {
             setSnackbar({ open: true, msg: 'Failed to update status.', severity: 'error' });
+        }
+    };
+
+    const handleTriggerApprove = (u) => setUserToApprove(u);
+    const handleTriggerReject = (u) => setUserToReject(u);
+
+    const handleExportPDF = () => {
+        const doc = new jsPDF();
+        const timestamp = new Date().toLocaleString();
+
+        // Brand Header
+        doc.setFillColor(63, 81, 181); // Indigo color
+        doc.rect(0, 0, 210, 40, 'F');
+
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('EasyStay', 20, 25);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Boarding Management System | Admin Report', 20, 32);
+
+        // Report Title
+        doc.setTextColor(33, 33, 33);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Registered Users Report', 20, 55);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Generated on: ${timestamp}`, 20, 62);
+        doc.text(`Total Users in this view: ${filteredUsers.length}`, 20, 67);
+
+        // Filter info
+        if (roleFilter !== 'All' || statusFilter !== 'All' || searchTerm) {
+            let filterText = 'Active Filters: ';
+            if (roleFilter !== 'All') filterText += `Role: ${roleFilter} | `;
+            if (statusFilter !== 'All') filterText += `Status: ${statusFilter} | `;
+            if (searchTerm) filterText += `Search: "${searchTerm}"`;
+            doc.text(filterText, 20, 75);
+        }
+
+        // Table
+        const tableData = filteredUsers.map(u => [
+            u.name,
+            u.email,
+            u.role,
+            u.status,
+            new Date(u.createdAt).toLocaleDateString()
+        ]);
+
+        autoTable(doc, {
+            startY: 85,
+            head: [['Name', 'Email', 'Role', 'Status', 'Joined Date']],
+            body: tableData,
+            headStyles: {
+                fillColor: [63, 81, 181],
+                textColor: [255, 255, 255],
+                fontSize: 10,
+                fontStyle: 'bold',
+                halign: 'left'
+            },
+            bodyStyles: {
+                fontSize: 9,
+                textColor: [51, 51, 51]
+            },
+            alternateRowStyles: {
+                fillColor: [245, 245, 250]
+            },
+            margin: { left: 20, right: 20 },
+            didDrawPage: (data) => {
+                // Footer
+                const str = 'Page ' + doc.internal.getNumberOfPages();
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
+                doc.text('© 2026 EasyStay - Confidential Administrator Document', 120, doc.internal.pageSize.height - 10);
+            }
+        });
+
+        doc.save(`EasyStay_Users_Report_${new Date().getTime()}.pdf`);
+        setSnackbar({ open: true, msg: 'PDF report generated successfully!', severity: 'success' });
+    };
+
+    const handleDeleteUser = async (id) => {
+        try {
+            await userService.deleteUser(id);
+            setSnackbar({ open: true, msg: 'User deleted successfully.', severity: 'success' });
+            setUserToDelete(null);
+            loadAdminData();
+        } catch (err) {
+            setSnackbar({ open: true, msg: err.response?.data?.error || 'Failed to delete user.', severity: 'error' });
+        }
+    };
+
+    const handleUpdateUser = async (id, data) => {
+        try {
+            await userService.updateUser(id, data);
+            setSnackbar({ open: true, msg: 'User details updated successfully.', severity: 'success' });
+            setSelectedUserEdit(null);
+            loadAdminData();
+        } catch (err) {
+            setSnackbar({ open: true, msg: err.response?.data?.error || 'Failed to update user.', severity: 'error' });
         }
     };
 
@@ -322,11 +880,11 @@ const AdminDashboard = () => {
 
     // ─── Colors ─────────────────────────────
     const bg = darkMode ? '#0f121a' : '#f1f5f9';
-    const cardBg = darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
-    const cardBorder = darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-    const textPrimary = darkMode ? '#f8fafc' : '#0f172a';
+    const cardBg = darkMode ? 'rgba(255,255,255,0.04)' : '#ffffff';
+    const cardBorder = darkMode ? 'rgba(255,255,255,0.08)' : '#e2e8f0';
+    const textPrimary = darkMode ? '#f8fafc' : '#1e293b';
     const textSecondary = darkMode ? '#94a3b8' : '#64748b';
-    const sidebarBg = darkMode ? 'rgba(10,12,20,0.95)' : 'rgba(255,255,255,0.9)';
+    const sidebarBg = darkMode ? 'rgba(10,12,20,0.97)' : '#ffffff';
 
     return (
         <div style={{ minHeight: '100vh', background: bg, color: textPrimary, fontFamily: 'Inter, system-ui, sans-serif', transition: 'all 0.3s' }}
@@ -340,7 +898,7 @@ const AdminDashboard = () => {
                     style={{
                         background: sidebarBg,
                         borderRight: `1px solid ${cardBorder}`,
-                        backdropFilter: 'blur(24px)',
+                        boxShadow: darkMode ? 'none' : '2px 0 16px rgba(0,0,0,0.06)',
                         height: '100vh',
                         position: 'sticky',
                         top: 0,
@@ -352,8 +910,8 @@ const AdminDashboard = () => {
                 >
                     {/* Logo */}
                     <div className="flex items-center gap-3 px-5 py-5 shrink-0">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                            style={{ background: 'linear-gradient(135deg, #6366f1, #06b6d4)' }}>
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
+                            style={{ background: 'linear-gradient(135deg, #4f46e5, #ec4899)' }}>
                             <HomeIcon style={{ color: '#fff', fontSize: 18 }} />
                         </div>
                         <AnimatePresence>
@@ -362,7 +920,7 @@ const AdminDashboard = () => {
                                     initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}
                                     className="font-black text-lg"
-                                    style={{ color: textPrimary }}
+                                    style={{ background: 'linear-gradient(90deg, #4f46e5, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
                                 >EasyStay</motion.span>
                             )}
                         </AnimatePresence>
@@ -380,16 +938,20 @@ const AdminDashboard = () => {
                                     onClick={() => setActiveNav(id)}
                                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left relative"
                                     style={{
-                                        background: isActive ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.15))' : 'transparent',
-                                        border: isActive ? '1px solid rgba(99,102,241,0.3)' : '1px solid transparent',
-                                        color: isActive ? '#818cf8' : textSecondary,
+                                        background: isActive
+                                            ? (darkMode ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.15))' : 'linear-gradient(135deg, #ebf4ff, #e0e7ff)')
+                                            : 'transparent',
+                                        border: isActive
+                                            ? (darkMode ? '1px solid rgba(99,102,241,0.3)' : '1px solid #c7d2fe')
+                                            : '1px solid transparent',
+                                        color: isActive ? (darkMode ? '#818cf8' : '#4338ca') : textSecondary,
                                         minWidth: 0,
                                     }}
                                 >
                                     {isActive && (
                                         <motion.div layoutId="activeStrip"
-                                            className="absolute left-0 top-2 bottom-2 w-0.5 rounded-full"
-                                            style={{ background: 'linear-gradient(180deg,#6366f1,#06b6d4)' }}
+                                            className="absolute left-0 top-2 bottom-2 w-1 rounded-full shadow-md"
+                                            style={{ background: 'linear-gradient(180deg,#4f46e5,#ec4899)' }}
                                         />
                                     )}
                                     <Icon fontSize="small" className="shrink-0" />
@@ -433,17 +995,18 @@ const AdminDashboard = () => {
                 {/* TOPBAR */}
                 <header className="h-16 flex items-center justify-between px-6 shrink-0 sticky top-0 z-40"
                     style={{
-                        background: darkMode ? 'rgba(15,18,26,0.8)' : 'rgba(255,255,255,0.8)',
+                        background: darkMode ? 'rgba(15,18,26,0.9)' : '#ffffff',
                         backdropFilter: 'blur(20px)',
                         borderBottom: `1px solid ${cardBorder}`,
+                        boxShadow: darkMode ? 'none' : '0 1px 4px rgba(0,0,0,0.06)',
                     }}>
                     <div className="flex items-center gap-3">
                         <IconButton size="small" onClick={() => setSidebarOpen(p => !p)}
                             style={{ color: textSecondary }}>
                             {sidebarOpen ? <CollapseIcon fontSize="small" /> : <ExpandIcon fontSize="small" />}
                         </IconButton>
-                        <div className="hidden sm:flex items-center gap-2 rounded-xl px-3 py-1.5"
-                            style={{ background: cardBg, border: `1px solid ${cardBorder}` }}>
+                        <div className="hidden sm:flex items-center gap-2 rounded-lg px-3 py-1.5"
+                            style={{ background: darkMode ? 'rgba(255,255,255,0.04)' : '#f1f5f9', border: `1px solid ${cardBorder}` }}>
                             <SearchIcon style={{ fontSize: 15, color: textSecondary }} />
                             <InputBase placeholder="Quick search…" sx={{ fontSize: 13, color: textPrimary, width: 180 }} />
                         </div>
@@ -490,15 +1053,15 @@ const AdminDashboard = () => {
                 </header>
 
                 {/* PAGE CONTENT */}
-                <main className="flex-1 p-6 space-y-8 overflow-y-auto">
+                <main className="flex-1 p-6 md:p-8 space-y-6 overflow-y-auto">
 
                     {activeNav === 'dashboard' && (
-                        <motion.div key="dashboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-8">
+                        <motion.div key="dashboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
 
                             {/* Welcome */}
                             <div>
                                 <h1 className="text-2xl font-black" style={{ color: textPrimary }}>
-                                    Welcome back, <span style={{ background: 'linear-gradient(90deg,#6366f1,#06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{adminName}</span> 👋
+                                    Welcome back, <span style={{ background: darkMode ? 'linear-gradient(90deg, #818cf8, #c084fc)' : 'linear-gradient(90deg, #4338ca, #c026d3)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{adminName}</span> 👋
                                 </h1>
                                 <p className="text-sm mt-1" style={{ color: textSecondary }}>Here's what's happening in your system today.</p>
                             </div>
@@ -506,49 +1069,100 @@ const AdminDashboard = () => {
                             {/* STAT CARDS */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
                                 <StatCard label="Total Users" value={stats?.totalUsers} icon={PeopleIcon}
-                                    accent="linear-gradient(135deg,#6366f1,#818cf8)" delay={0} />
+                                    accent="linear-gradient(135deg,#6366f1,#818cf8)" delay={0} darkMode={darkMode} />
                                 <StatCard label="Pending Approvals" value={stats?.pendingOwners} icon={TimeIcon}
-                                    accent="linear-gradient(135deg,#f59e0b,#fbbf24)" delay={0.08} />
+                                    accent="linear-gradient(135deg,#f59e0b,#fbbf24)" delay={0.08} darkMode={darkMode} />
                                 <StatCard label="Active Owners" value={stats?.activeOwners} icon={HomeIcon}
-                                    accent="linear-gradient(135deg,#06b6d4,#22d3ee)" delay={0.16} />
+                                    accent="linear-gradient(135deg,#06b6d4,#22d3ee)" delay={0.16} darkMode={darkMode} />
                                 <StatCard label="Students" value={stats?.totalStudents} icon={PersonIcon}
-                                    accent="linear-gradient(135deg,#10b981,#34d399)" delay={0.24} />
+                                    accent="linear-gradient(135deg,#10b981,#34d399)" delay={0.24} darkMode={darkMode} />
                             </div>
 
                             {/* CHART */}
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}
-                                className="rounded-2xl p-6"
-                                style={{ background: cardBg, border: `1px solid ${cardBorder}`, backdropFilter: 'blur(20px)' }}>
-                                <div className="flex items-center justify-between mb-6">
+                                className="rounded-3xl p-6 relative overflow-hidden"
+                                style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: darkMode ? 'none' : '0 10px 40px rgba(79,70,229,0.06)' }}>
+                                {/* Decorative colorful blob for light mode */}
+                                {!darkMode && <div className="absolute -top-24 -right-24 w-60 h-60 bg-pink-400/10 rounded-full blur-3xl pointer-events-none" />}
+                                {!darkMode && <div className="absolute bottom-0 left-1/4 w-72 h-40 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />}
+
+                                <div className="flex items-center justify-between mb-8 relative z-10">
                                     <div>
                                         <h2 className="text-sm font-bold" style={{ color: textPrimary }}>User Growth</h2>
-                                        <p className="text-xs mt-0.5" style={{ color: textSecondary }}>Monthly registrations overview</p>
+                                        <p className="text-[11px]" style={{ color: textSecondary }}>Monthly registrations overview</p>
                                     </div>
-                                    <TrendIcon style={{ color: '#06b6d4', fontSize: 20 }} />
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black"
+                                        style={{ background: 'rgba(99,102,241,0.1)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.2)' }}>
+                                        <TrendIcon sx={{ fontSize: 14 }} /> +12.5%
+                                    </div>
                                 </div>
-                                <ResponsiveContainer width="100%" height={180}>
-                                    <AreaChart data={DUMMY_CHART_DATA}>
-                                        <defs>
-                                            <linearGradient id="userGrad" x1="0" y1="0" x2="0" y2="1">
-                                                <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                                                <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                            </linearGradient>
-                                        </defs>
-                                        <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} />
-                                        <XAxis dataKey="name" tick={{ fill: textSecondary, fontSize: 11 }} axisLine={false} tickLine={false} />
-                                        <YAxis tick={{ fill: textSecondary, fontSize: 11 }} axisLine={false} tickLine={false} width={25} />
-                                        <RechartTooltip content={<ChartTooltip />} />
-                                        <Area type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={2.5}
-                                            fill="url(#userGrad)" dot={{ fill: '#6366f1', strokeWidth: 0, r: 4 }} activeDot={{ r: 6, fill: '#818cf8' }} />
-                                    </AreaChart>
-                                </ResponsiveContainer>
+                                <div className="h-[280px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={stats?.growthData?.length > 0 ? stats.growthData : DUMMY_CHART_DATA}>
+                                            <defs>
+                                                <linearGradient id="colorUsers" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor={darkMode ? "#818cf8" : "#6366f1"} stopOpacity={0.4} />
+                                                    <stop offset="95%" stopColor={darkMode ? "#818cf8" : "#ec4899"} stopOpacity={0.05} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} />
+                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: textSecondary, fontSize: 10, fontWeight: 600 }} dy={10} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fill: textSecondary, fontSize: 10, fontWeight: 600 }} />
+                                            <RechartTooltip content={<ChartTooltip darkMode={darkMode} cardBg={cardBg} cardBorder={cardBorder} textPrimary={textPrimary} textSecondary={textSecondary} />} />
+                                            <Area type="monotone" dataKey="users" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorUsers)" animationDuration={1500} />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </motion.div>
 
+                            {/* RECENT ACTIVITY & UPDATES */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}
+                                    className="lg:col-span-2 rounded-2xl overflow-hidden"
+                                    style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
+                                    <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: cardBorder }}>
+                                        <h2 className="text-sm font-bold" style={{ color: textPrimary }}>Recent Activity</h2>
+                                        <button className="text-[10px] font-black uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors">View All</button>
+                                    </div>
+                                    <div className="divide-y divide-white/5">
+                                        {stats?.recentActivity?.length > 0 ? (
+                                            stats.recentActivity.map((activity, idx) => (
+                                                <ActivityItem
+                                                    key={activity._id}
+                                                    activity={activity}
+                                                    cardBorder={cardBorder}
+                                                    textPrimary={textPrimary}
+                                                    textSecondary={textSecondary}
+                                                    darkMode={darkMode}
+                                                />
+                                            ))
+                                        ) : (
+                                            <div className="px-6 py-12 text-center text-xs text-gray-500">No recent activity found.</div>
+                                        )}
+                                    </div>
+                                </motion.div>
+
+                                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48, duration: 0.4 }}
+                                    className="rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4"
+                                    style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(6,182,212,0.1))', border: `1px solid ${cardBorder}` }}>
+                                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2" style={{ background: 'rgba(99,102,241,0.2)' }}>
+                                        <DocIcon sx={{ fontSize: 32, color: '#818cf8' }} />
+                                    </div>
+                                    <h3 className="text-sm font-bold" style={{ color: textPrimary }}>Quick Reports</h3>
+                                    <p className="text-[11px]" style={{ color: textSecondary }}>Download your monthly system audit and user logs in PDF format.</p>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                        onClick={handleExportPDF}
+                                        className="mt-2 px-6 py-2.5 rounded-xl text-xs font-black bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">
+                                        Generate Audit
+                                    </motion.button>
+                                </motion.div>
+                            </div>
                             {/* PENDING APPROVALS */}
                             {pendingOwners.length > 0 && (
                                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.4 }}
                                     className="rounded-2xl overflow-hidden"
-                                    style={{ background: cardBg, border: `1px solid rgba(245,158,11,0.25)`, backdropFilter: 'blur(20px)' }}>
+                                    style={{ background: cardBg, border: `1px solid rgba(245,158,11,0.25)`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(245,158,11,0.08)' }}>
                                     <div className="flex items-center justify-between px-6 py-4 border-b"
                                         style={{ borderColor: 'rgba(245,158,11,0.15)' }}>
                                         <div className="flex items-center gap-3">
@@ -612,6 +1226,11 @@ const AdminDashboard = () => {
                                                                         </IconButton>
                                                                     </Tooltip>
                                                                 ))}
+                                                                <Tooltip title="View All Details">
+                                                                    <IconButton size="small" onClick={() => setSelectedUser(row)} sx={{ color: '#6366f1', background: 'rgba(99,102,241,0.08)', ml: 1 }}>
+                                                                        <ExpandIcon sx={{ fontSize: 16 }} />
+                                                                    </IconButton>
+                                                                </Tooltip>
                                                                 {!row.nicPhoto && !row.facePhoto && !row.boardingDocuments?.length && (
                                                                     <span className="text-xs" style={{ color: textSecondary }}>No docs</span>
                                                                 )}
@@ -620,13 +1239,13 @@ const AdminDashboard = () => {
                                                         <td className="px-5 py-4">
                                                             <div className="flex items-center gap-2">
                                                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                                                    onClick={() => handleUpdateStatus(row._id, 'Active')}
+                                                                    onClick={() => handleTriggerApprove(row)}
                                                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
                                                                     style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
                                                                     <ApproveIcon sx={{ fontSize: 14 }} /> Approve
                                                                 </motion.button>
                                                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                                                    onClick={() => handleUpdateStatus(row._id, 'Rejected')}
+                                                                    onClick={() => handleTriggerReject(row)}
                                                                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
                                                                     style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
                                                                     <RejectIcon sx={{ fontSize: 14 }} /> Reject
@@ -655,24 +1274,100 @@ const AdminDashboard = () => {
                             {/* ALL USERS TABLE */}
                             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, duration: 0.4 }}
                                 className="rounded-2xl overflow-hidden"
-                                style={{ background: cardBg, border: `1px solid ${cardBorder}`, backdropFilter: 'blur(20px)' }}>
-                                <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: cardBorder }}>
-                                    <h2 className="text-sm font-bold" style={{ color: textPrimary }}>All Users ({users.length})</h2>
+                                style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-6 py-6 gap-4 border-b" style={{ borderColor: cardBorder }}>
+                                    <h2 className="text-sm font-bold" style={{ color: textPrimary }}>All Users ({filteredUsers.length})</h2>
+
+                                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                                        {/* Export PDF Button */}
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={handleExportPDF}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #ef4444, #b91c1c)',
+                                                color: '#fff',
+                                                boxShadow: '0 4px 12px rgba(239, 68, 68, 0.2)'
+                                            }}
+                                        >
+                                            <PdfIcon sx={{ fontSize: 16 }} /> Export PDF
+                                        </motion.button>
+
+                                        {/* Search Bar */}
+                                        <div className="relative group flex-1 md:flex-none md:w-64">
+                                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-indigo-400 transition-colors" sx={{ fontSize: 18 }} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search name or email..."
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 rounded-xl text-xs font-medium outline-none transition-all"
+                                                style={{
+                                                    background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                                    border: `1px solid ${cardBorder}`,
+                                                    color: textPrimary
+                                                }}
+                                            />
+                                        </div>
+
+                                        {/* Role Filter */}
+                                        <select
+                                            value={roleFilter}
+                                            onChange={(e) => setRoleFilter(e.target.value)}
+                                            className="px-3 py-2 rounded-xl text-xs font-bold outline-none cursor-pointer transition-all"
+                                            style={{
+                                                background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                                border: `1px solid ${cardBorder}`,
+                                                color: textSecondary
+                                            }}
+                                        >
+                                            <option value="All">All Roles</option>
+                                            <option value="Admin">Admin</option>
+                                            <option value="BoardingOwner">BoardingOwner</option>
+                                            <option value="Student">Student</option>
+                                        </select>
+
+                                        {/* Status Filter */}
+                                        <select
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            className="px-3 py-2 rounded-xl text-xs font-bold outline-none cursor-pointer transition-all"
+                                            style={{
+                                                background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                                border: `1px solid ${cardBorder}`,
+                                                color: textSecondary
+                                            }}
+                                        >
+                                            <option value="All">All Status</option>
+                                            <option value="Active">Active</option>
+                                            <option value="Pending">Pending</option>
+                                            <option value="Rejected">Rejected</option>
+                                            <option value="Inactive">Inactive</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
                                         <thead>
                                             <tr style={{ borderBottom: `1px solid ${cardBorder}` }}>
-                                                {['User', 'Role', 'Joined', 'Status', ''].map(h => (
+                                                {['User', 'Role', 'Joined', 'Status', 'Actions'].map(h => (
                                                     <th key={h} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest"
                                                         style={{ color: textSecondary }}>{h}</th>
                                                 ))}
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {loading
-                                                ? [...Array(4)].map((_, i) => <SkeletonRow key={i} />)
-                                                : users.map((row, i) => (
+                                            {loading ? (
+                                                [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+                                            ) : filteredUsers.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="px-5 py-12 text-center text-xs text-gray-400">
+                                                        No users found matching your search/filters.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                filteredUsers.map((row, i) => (
                                                     <motion.tr key={row._id}
                                                         initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}
                                                         style={{ borderBottom: `1px solid ${cardBorder}` }}
@@ -707,46 +1402,227 @@ const AdminDashboard = () => {
                                                         </td>
                                                         <td className="px-5 py-3.5">
                                                             <div className="flex items-center gap-2">
-                                                                <motion.button
-                                                                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                                                    onClick={() => setSelectedUser(row)}
-                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                                                    style={{ background: 'rgba(99,102,241,0.12)', color: '#818cf8', border: '1px solid rgba(99,102,241,0.25)' }}
-                                                                >
-                                                                    <ViewIcon sx={{ fontSize: 13 }} /> View
-                                                                </motion.button>
-                                                                {row.role !== 'Admin' && (
-                                                                    <motion.button
-                                                                        whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                                                        onClick={() => handleUpdateStatus(row._id, row.status === 'Active' ? 'Inactive' : 'Active')}
-                                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
-                                                                        style={
-                                                                            row.status === 'Active'
-                                                                                ? { background: 'rgba(148,163,184,0.1)', color: '#94a3b8', border: '1px solid rgba(148,163,184,0.25)' }
-                                                                                : { background: 'rgba(16,185,129,0.12)', color: '#34d399', border: '1px solid rgba(16,185,129,0.25)' }
-                                                                        }
+                                                                <Tooltip title="View Details">
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => setSelectedUser(row)}
+                                                                        sx={{ color: '#818cf8', background: 'rgba(99,102,241,0.08)', '&:hover': { background: 'rgba(99,102,241,0.15)' } }}
                                                                     >
-                                                                        {row.status === 'Active' ? 'Deactivate' : 'Activate'}
-                                                                    </motion.button>
+                                                                        <ViewIcon sx={{ fontSize: 16 }} />
+                                                                    </IconButton>
+                                                                </Tooltip>
+
+                                                                <Tooltip title="Edit User">
+                                                                    <IconButton
+                                                                        size="small"
+                                                                        onClick={() => setSelectedUserEdit(row)}
+                                                                        sx={{ color: '#06b6d4', background: 'rgba(6,182,212,0.08)', '&:hover': { background: 'rgba(6,182,212,0.15)' } }}
+                                                                    >
+                                                                        <EditIcon sx={{ fontSize: 16 }} />
+                                                                    </IconButton>
+                                                                </Tooltip>
+
+                                                                {row.role !== 'Admin' && (
+                                                                    <>
+                                                                        <Tooltip title={row.status === 'Active' ? 'Deactivate' : 'Activate'}>
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={() => handleUpdateStatus(row._id, row.status === 'Active' ? 'Inactive' : 'Active')}
+                                                                                sx={{
+                                                                                    color: row.status === 'Active' ? '#94a3b8' : '#34d399',
+                                                                                    background: row.status === 'Active' ? 'rgba(148,163,184,0.08)' : 'rgba(16,185,129,0.08)',
+                                                                                    '&:hover': { background: row.status === 'Active' ? 'rgba(148,163,184,0.15)' : 'rgba(16,185,129,0.15)' }
+                                                                                }}
+                                                                            >
+                                                                                {row.status === 'Active' ? <RejectIcon sx={{ fontSize: 16 }} /> : <ApproveIcon sx={{ fontSize: 16 }} />}
+                                                                            </IconButton>
+                                                                        </Tooltip>
+
+                                                                        <Tooltip title="Delete User">
+                                                                            <IconButton
+                                                                                size="small"
+                                                                                onClick={() => setUserToDelete(row)}
+                                                                                sx={{ color: '#f87171', background: 'rgba(239,68,68,0.08)', '&:hover': { background: 'rgba(239,68,68,0.15)' } }}
+                                                                            >
+                                                                                <DeleteIcon sx={{ fontSize: 16 }} />
+                                                                            </IconButton>
+                                                                        </Tooltip>
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         </td>
                                                     </motion.tr>
                                                 ))
-                                            }
+                                            )}
                                         </tbody>
                                     </table>
                                 </div>
                             </motion.div>
                         </motion.div>
+                    )}
 
+                    {activeNav === 'approvals' && (
+                        <motion.div key="approvals" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+
+                            {/* Section Title */}
+                            <div>
+                                <h1 className="text-2xl font-black" style={{ color: textPrimary }}>Pending Approvals</h1>
+                                <p className="text-sm mt-1" style={{ color: textSecondary }}>Review and manage pending boarding owner applications.</p>
+                            </div>
+
+                            {/* PENDING APPROVALS TABLE */}
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
+                                className="rounded-2xl overflow-hidden shadow-xl"
+                                style={{ background: cardBg, border: `1px solid rgba(245,158,11,0.25)`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(245,158,11,0.08)' }}>
+                                <div className="flex items-center justify-between px-6 py-4 border-b"
+                                    style={{ borderColor: 'rgba(245,158,11,0.15)' }}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                                        <h2 className="text-sm font-bold" style={{ color: textPrimary }}>Pending Applications ({pendingOwners.length})</h2>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr style={{ borderBottom: `1px solid ${cardBorder}` }}>
+                                                {['Applicant', 'Contact', 'Address', 'Documents', 'Actions'].map(h => (
+                                                    <th key={h} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest"
+                                                        style={{ color: textSecondary }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pendingOwners.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="px-5 py-20 text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="w-16 h-16 rounded-full bg-white/[0.03] flex items-center justify-center">
+                                                                <ApproveIcon sx={{ fontSize: 32, color: textSecondary, opacity: 0.3 }} />
+                                                            </div>
+                                                            <p className="text-sm font-medium" style={{ color: textSecondary }}>No pending applications found.</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                pendingOwners.map((row, i) => (
+                                                    <motion.tr key={row._id}
+                                                        initial={{ opacity: 0, x: -12 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: i * 0.06 }}
+                                                        style={{ borderBottom: `1px solid ${cardBorder}` }}
+                                                        className="group hover:bg-white/[0.02] transition-colors"
+                                                    >
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-3">
+                                                                <Avatar sx={{ width: 32, height: 32, fontSize: 12, fontWeight: 700, background: 'linear-gradient(135deg,#6366f1,#06b6d4)' }}>
+                                                                    {row.name[0]}
+                                                                </Avatar>
+                                                                <div>
+                                                                    <p className="text-sm font-semibold" style={{ color: textPrimary }}>{row.name}</p>
+                                                                    <p className="text-[11px]" style={{ color: textSecondary }}>{row.email}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-4 text-sm" style={{ color: textSecondary }}>{row.phoneNumber || '—'}</td>
+                                                        <td className="px-5 py-4 text-sm" style={{ color: textSecondary, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.address || '—'}</td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-1">
+                                                                {row.nicPhoto && (
+                                                                    <Tooltip title="View NIC Photo">
+                                                                        <IconButton size="small" component="a" href={row.nicPhoto} target="_blank" sx={{ color: '#818cf8' }}>
+                                                                            <ViewIcon sx={{ fontSize: 16 }} />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                )}
+                                                                {row.facePhoto && (
+                                                                    <Tooltip title="View Face Photo">
+                                                                        <IconButton size="small" component="a" href={row.facePhoto} target="_blank" sx={{ color: '#22d3ee' }}>
+                                                                            <ViewIcon sx={{ fontSize: 16 }} />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                )}
+                                                                {row.boardingDocuments?.map((doc, idx) => (
+                                                                    <Tooltip key={idx} title={`Boarding Doc ${idx + 1}`}>
+                                                                        <IconButton size="small" component="a" href={doc} target="_blank" sx={{ color: '#fbbf24' }}>
+                                                                            <DocIcon sx={{ fontSize: 16 }} />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                ))}
+                                                                <Tooltip title="View All Details">
+                                                                    <IconButton size="small" onClick={() => setSelectedUser(row)} sx={{ color: '#6366f1', background: 'rgba(99,102,241,0.08)', ml: 1 }}>
+                                                                        <ExpandIcon sx={{ fontSize: 16 }} />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                                                    onClick={() => handleTriggerApprove(row)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                                                    style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                                                    <ApproveIcon sx={{ fontSize: 14 }} /> Approve
+                                                                </motion.button>
+                                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                                                    onClick={() => handleTriggerReject(row)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                                                    style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                                                                    <RejectIcon sx={{ fontSize: 14 }} /> Reject
+                                                                </motion.button>
+                                                            </div>
+                                                        </td>
+                                                    </motion.tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        </motion.div>
                     )}
 
                 </main>
             </div>
 
             {/* USER DETAIL MODAL */}
-            <UserDetailModal user={selectedUser} onClose={() => setSelectedUser(null)} darkMode={darkMode} />
+            <UserDetailModal
+                user={selectedUser}
+                onClose={() => setSelectedUser(null)}
+                onStatusUpdate={(u, s) => s === 'Active' ? handleTriggerApprove(u) : handleTriggerReject(u)}
+                darkMode={darkMode}
+            />
+
+            {/* USER EDIT MODAL */}
+            <UserEditModal
+                user={selectedUserEdit}
+                onClose={() => setSelectedUserEdit(null)}
+                onSave={handleUpdateUser}
+                darkMode={darkMode}
+            />
+
+            {/* DELETE CONFIRMATION MODAL */}
+            <DeleteConfirmationModal
+                user={userToDelete}
+                onClose={() => setUserToDelete(null)}
+                onConfirm={handleDeleteUser}
+                darkMode={darkMode}
+            />
+
+            {/* APPROVE CONFIRMATION MODAL */}
+            <ApproveConfirmationModal
+                user={userToApprove}
+                onClose={() => setUserToApprove(null)}
+                onConfirm={handleUpdateStatus}
+                darkMode={darkMode}
+            />
+
+            {/* REJECT REASON MODAL */}
+            <RejectReasonModal
+                user={userToReject}
+                onClose={() => setUserToReject(null)}
+                onConfirm={handleUpdateStatus}
+                darkMode={darkMode}
+            />
 
             {/* SNACKBAR */}
             <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={() => setSnackbar(p => ({ ...p, open: false }))}

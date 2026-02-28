@@ -2,7 +2,9 @@ const express = require('express');
 const {
     getUsers,
     updateUserStatus,
-    getAdminStats
+    getAdminStats,
+    updateUser,
+    deleteUser
 } = require('../controllers/userController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
 
@@ -15,5 +17,7 @@ router.use(authorize('Admin'));
 router.get('/', getUsers);
 router.get('/stats', getAdminStats);
 router.put('/:id/status', updateUserStatus);
+router.put('/:id', updateUser);
+router.delete('/:id', deleteUser);
 
 module.exports = router;

@@ -21,15 +21,27 @@ const getStats = async () => {
     return response.data;
 };
 
-const updateUserStatus = async (id, status) => {
-    const response = await axios.put(`${API_URL}/${id}/status`, { status }, getAuthConfig());
+const updateUserStatus = async (id, status, rejectionReason = null) => {
+    const response = await axios.put(`${API_URL}/${id}/status`, { status, rejectionReason }, getAuthConfig());
+    return response.data;
+};
+
+const updateUser = async (id, userData) => {
+    const response = await axios.put(`${API_URL}/${id}`, userData, getAuthConfig());
+    return response.data;
+};
+
+const deleteUser = async (id) => {
+    const response = await axios.delete(`${API_URL}/${id}`, getAuthConfig());
     return response.data;
 };
 
 const userService = {
     getUsers,
     getStats,
-    updateUserStatus
+    updateUserStatus,
+    updateUser,
+    deleteUser
 };
 
 export default userService;

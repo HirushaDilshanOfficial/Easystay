@@ -360,7 +360,7 @@ const Dashboard = () => {
                             </Grid>
 
                             <Grid item xs={12} md={4}>
-                                <Card className="rounded-2xl border border-gray-100 shadow-sm">
+                                <Card className="rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
                                     <CardContent className="p-6">
                                         <Typography color="textSecondary" gutterBottom className="text-xs font-bold uppercase tracking-wider">
                                             My Bookings
@@ -371,7 +371,7 @@ const Dashboard = () => {
                                 </Card>
                             </Grid>
                             <Grid item xs={12} md={4}>
-                                <Card className="rounded-2xl border border-gray-100 shadow-sm">
+                                <Card className="rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
                                     <CardContent className="p-6">
                                         <Typography color="textSecondary" gutterBottom className="text-xs font-bold uppercase tracking-wider">
                                             Saved Places
@@ -382,7 +382,7 @@ const Dashboard = () => {
                                 </Card>
                             </Grid>
                             <Grid item xs={12} md={4}>
-                                <Card className="rounded-2xl border border-gray-100 shadow-sm">
+                                <Card className="rounded-2xl border border-gray-100 shadow-sm transition-all hover:shadow-md">
                                     <CardContent className="p-6">
                                         <Typography color="textSecondary" gutterBottom className="text-xs font-bold uppercase tracking-wider">
                                             Messages
@@ -391,6 +391,38 @@ const Dashboard = () => {
                                         <div className="mt-4 text-gray-400 text-sm font-medium">All caught up!</div>
                                     </CardContent>
                                 </Card>
+                            </Grid>
+
+                            {/* Recent Activity for Students/Owners */}
+                            <Grid item xs={12}>
+                                <Typography variant="h6" className="font-bold text-gray-800 mb-4">Latest System Updates</Typography>
+                                <Paper className="rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                    <div className="divide-y divide-gray-50">
+                                        {(stats?.recentActivity || []).slice(0, 5).map((activity) => (
+                                            <div key={activity._id} className="p-4 flex items-center gap-4 hover:bg-gray-50 transition-colors">
+                                                <Avatar className="w-10 h-10 bg-indigo-50 text-indigo-600 text-sm font-bold">
+                                                    {activity.name[0]}
+                                                </Avatar>
+                                                <div className="flex-1">
+                                                    <Typography variant="body2" className="font-semibold text-gray-800">
+                                                        {activity.name} <span className="font-normal text-gray-500">joined EasyStay</span>
+                                                    </Typography>
+                                                    <Typography variant="caption" className="text-gray-400">
+                                                        {new Date(activity.createdAt).toLocaleDateString()}
+                                                    </Typography>
+                                                </div>
+                                                <Chip
+                                                    label={activity.role}
+                                                    size="small"
+                                                    className="text-[10px] font-bold bg-gray-100 text-gray-500"
+                                                />
+                                            </div>
+                                        ))}
+                                        {(!stats?.recentActivity || stats.recentActivity.length === 0) && (
+                                            <div className="p-12 text-center text-gray-400 text-sm">No recent updates to show.</div>
+                                        )}
+                                    </div>
+                                </Paper>
                             </Grid>
                         </Grid>
                     )}

@@ -52,6 +52,11 @@ const userSchema = new mongoose.Schema({
         enum: ['Active', 'Pending', 'Rejected', 'Inactive'],
         default: 'Active'
     },
+    // BoardingOwner rejection reason
+    rejectionReason: {
+        type: String,
+        default: null
+    },
     createdAt: {
         type: Date,
         default: Date.now

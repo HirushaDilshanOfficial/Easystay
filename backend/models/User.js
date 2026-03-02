@@ -1,0 +1,102 @@
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+
+const userSchema = new mongoose.Schema({
+    name: {
+        type: String,
+        required: [true, 'Please add a name'],
+        trim: true
+    },
+    email: {
+        type: String,
+        required: [true, 'Please add an email'],
+        unique: true,
+        lowercase: true,
+        trim: true
+    },
+    password: {
+        type: String,
+        required: [true, 'Please add a password'],
+        minlength: 6,
+        select: false
+    },
+    role: {
+        type: String,
+        enum: ['Admin', 'Student', 'BoardingOwner'],
+        required: [true, 'Please select a role']
+    },
+    // BoardingOwner fields
+    phoneNumber: {
+        type: String,
+        default: null
+    },
+    address: {
+        type: String,
+        default: null
+    },
+    nicPhoto: {
+        type: String,
+        default: null
+    },
+    facePhoto: {
+        type: String,
+        default: null
+    },
+    boardingDocuments: {
+        type: [String],
+        default: []
+    },
+    // BoardingOwner approval status
+    status: {
+        type: String,
+        enum: ['Active', 'Pending', 'Rejected', 'Inactive'],
+        default: 'Active'
+    },
+    // BoardingOwner rejection reason
+    rejectionReason: {
+        type: String,
+        default: null
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now
+    },
+    loyaltyPoints: {
+        type: Number,
+        default: 0
+    },
+    isVerified: {
+        type: Boolean,
+        default: true // Default true, but will be set to false for students
+    },
+    otp: {
+        type: String,
+        default: null
+    },
+    otpExpire: {
+        type: Date,
+        default: null
+    },
+    resetPasswordOTP: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpire: {
+        type: Date,
+        default: null
+    }
+});
+
+// Hash password before saving
+userSchema.pre('save', async function () {
+    if (!this.isModified('password')) return;
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+});
+
+// Match entered password to hashed password
+userSchema.methods.matchPassword = async function (enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
+
+module.exports = mongoose.model('User', userSchema);

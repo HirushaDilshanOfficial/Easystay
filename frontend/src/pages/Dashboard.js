@@ -32,7 +32,8 @@ import {
     Apartment as ApartmentIcon,
     Search as SearchIcon,
     FavoriteBorder as FavoriteIcon,
-    NotificationsActive as BellIcon
+    NotificationsActive as BellIcon,
+    Stars as StarsIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
@@ -436,7 +437,7 @@ const Dashboard = () => {
                                     </Grid>
 
                                     {/* Stat Cards */}
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid item xs={12} sm={4}>
                                         <Card sx={{ borderRadius: 4, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(79,70,229,0.12)' } }}>
                                             <CardContent sx={{ p: 3 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -450,7 +451,7 @@ const Dashboard = () => {
                                             </CardContent>
                                         </Card>
                                     </Grid>
-                                    <Grid item xs={12} sm={6}>
+                                    <Grid item xs={12} sm={4}>
                                         <Card sx={{ borderRadius: 4, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(239,68,68,0.12)' } }}>
                                             <CardContent sx={{ p: 3 }}>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
@@ -461,6 +462,32 @@ const Dashboard = () => {
                                                 </Box>
                                                 <Typography variant="h3" sx={{ fontWeight: 800, color: '#1f2937' }}>0</Typography>
                                                 <Typography variant="body2" sx={{ color: '#9ca3af', mt: 1 }}>Browse to save places</Typography>
+                                            </CardContent>
+                                        </Card>
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <Card sx={{
+                                            borderRadius: 4,
+                                            border: '1px solid rgba(245, 158, 11, 0.1)',
+                                            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                                            transition: 'all 0.3s',
+                                            background: 'linear-gradient(135deg, #fff 0%, #fffbeb 100%)',
+                                            '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(245, 158, 11, 0.15)' }
+                                        }}>
+                                            <CardContent sx={{ p: 3 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+                                                    <Box sx={{ width: 44, height: 44, borderRadius: 3, bgcolor: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(245, 158, 11, 0.2)' }}>
+                                                        <StarsIcon sx={{ color: '#f59e0b', fontSize: 22 }} />
+                                                    </Box>
+                                                    <Typography sx={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1, color: '#9ca3af' }}>Loyalty Points</Typography>
+                                                </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                                                    <Typography variant="h3" sx={{ fontWeight: 800, color: '#1f2937' }}>
+                                                        {user?.loyaltyPoints || 0}
+                                                    </Typography>
+                                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem' }}>PTS</Typography>
+                                                </Box>
+                                                <Typography variant="body2" sx={{ color: '#9ca3af', mt: 1 }}>Available Balance</Typography>
                                             </CardContent>
                                         </Card>
                                     </Grid>

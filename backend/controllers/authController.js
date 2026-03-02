@@ -5,6 +5,8 @@ const {
     validateStudentSignup,
     validateBoardingOwnerSignup
 } = require('../validators/authValidator');
+const sendEmail = require('../utils/emailService');
+const crypto = require('crypto');
 
 // @desc    Register a new user (Student or BoardingOwner only)
 // @route   POST /api/auth/signup
@@ -32,8 +34,61 @@ exports.signup = async (req, res, next) => {
                 return res.status(400).json({ success: false, error: 'An account with this email already exists.' });
             }
 
-            const user = await User.create({ name, email, password, role: 'Student', status: 'Active' });
-            return sendTokenResponse(user, 201, res);
+            // Generate OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+            const user = await User.create({
+                name,
+                email,
+                password,
+                role: 'Student',
+                status: 'Active',
+                isVerified: false,
+                otp,
+                otpExpire
+            });
+
+            // Send OTP Email
+            try {
+                await sendEmail({
+                    email: user.email,
+                    subject: 'Email Verification OTP - Easy Stay',
+                    message: `Welcome to Easy Stay, ${user.name}! Your OTP for email verification is: ${otp}. This code will expire in 10 minutes.`,
+                    html: `
+                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                            <h2 style="color: #4a90e2; text-align: center;">Welcome to Easy Stay</h2>
+                            <p>Hi ${user.name},</p>
+                            <p>Thank you for signing up with Easy Stay. To complete your registration, please use the following OTP to verify your email address:</p>
+                            <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 5px; color: #333;">
+                                ${otp}
+                            </div>
+                            <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes.</p>
+                            <p>If you didn't create an account, please ignore this email.</p>
+                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                            <p style="text-align: center; color: #999; font-size: 12px;">© 2026 Easy Stay. All rights reserved.</p>
+                        </div>
+                    `
+                });
+
+                return res.status(201).json({
+                    success: true,
+                    message: 'Verification OTP sent to your email.',
+                    email: user.email,
+                    role: 'Student',
+                    isVerified: false
+                });
+            } catch (err) {
+                console.error('Email send error:', err);
+                // Even if email fails, user is created, they can request resend
+                return res.status(201).json({
+                    success: true,
+                    message: 'Account created but failed to send verification email. Please request a resend.',
+                    email: user.email,
+                    role: 'Student',
+                    isVerified: false
+                });
+            }
         }
 
         if (role === 'BoardingOwner') {
@@ -108,6 +163,16 @@ exports.login = async (req, res, next) => {
             return res.status(401).json({ success: false, error: 'Invalid credentials.' });
         }
 
+        // Check verification for students
+        if (user.role === 'Student' && !user.isVerified) {
+            return res.status(403).json({
+                success: false,
+                isVerified: false,
+                error: 'Please verify your email to log in.',
+                email: user.email
+            });
+        }
+
         // Block pending boarding owners from logging in
         if (user.status === 'Pending') {
             return res.status(403).json({
@@ -131,6 +196,207 @@ exports.login = async (req, res, next) => {
         }
 
         sendTokenResponse(user, 200, res);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-otp
+// @access  Public
+exports.verifyOTP = async (req, res, next) => {
+    try {
+        const { email, otp } = req.body;
+
+        if (!email || !otp) {
+            return res.status(400).json({ success: false, error: 'Please provide email and OTP.' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found.' });
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ success: false, error: 'User is already verified.' });
+        }
+
+        if (user.otp !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid OTP.' });
+        }
+
+        if (user.otpExpire < Date.now()) {
+            return res.status(400).json({ success: false, error: 'OTP has expired. Please request a new one.' });
+        }
+
+        user.isVerified = true;
+        user.otp = null;
+        user.otpExpire = null;
+        await user.save();
+
+        sendTokenResponse(user, 200, res);
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Resend OTP
+// @route   POST /api/auth/resend-otp
+// @access  Public
+exports.resendOTP = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, error: 'Please provide email.' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found.' });
+        }
+
+        if (user.isVerified) {
+            return res.status(400).json({ success: false, error: 'User is already verified.' });
+        }
+
+        // Generate new OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        user.otp = otp;
+        user.otpExpire = otpExpire;
+        await user.save();
+
+        // Send OTP Email
+        await sendEmail({
+            email: user.email,
+            subject: 'New Verification OTP - Easy Stay',
+            message: `Your new OTP for email verification is: ${otp}. This code will expire in 10 minutes.`,
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                    <h2 style="color: #4a90e2; text-align: center;">Email Verification</h2>
+                    <p>Hi ${user.name},</p>
+                    <p>You requested a new OTP for email verification. Please use the following code:</p>
+                    <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 5px; color: #333;">
+                        ${otp}
+                    </div>
+                    <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes.</p>
+                    <p>If you didn't request this, please ignore this email.</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="text-align: center; color: #999; font-size: 12px;">© 2026 Easy Stay. All rights reserved.</p>
+                </div>
+            `
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'A new verification OTP has been sent to your email.'
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Forgot Password - Send OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgotPassword = async (req, res, next) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ success: false, error: 'Please provide an email.' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found.' });
+        }
+
+        // Generate 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpExpire = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+        user.resetPasswordOTP = otp;
+        user.resetPasswordExpire = otpExpire;
+        await user.save();
+
+        // Send Email
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Password Reset OTP - Easy Stay',
+                message: `You requested a password reset. Your OTP is: ${otp}. This code will expire in 10 minutes.`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                        <h2 style="color: #4a90e2; text-align: center;">Reset Your Password</h2>
+                        <p>Hi ${user.name},</p>
+                        <p>We received a request to reset your password. Use the following code to proceed:</p>
+                        <div style="background-color: #f4f4f4; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0; border-radius: 5px; color: #333;">
+                            ${otp}
+                        </div>
+                        <p style="color: #666; font-size: 14px;">This code will expire in 10 minutes.</p>
+                        <p>If you didn't request this, please change your password immediately or contact support.</p>
+                        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                        <p style="text-align: center; color: #999; font-size: 12px;">© 2026 Easy Stay. All rights reserved.</p>
+                    </div>
+                `
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Password reset OTP sent to your email.'
+            });
+        } catch (err) {
+            user.resetPasswordOTP = undefined;
+            user.resetPasswordExpire = undefined;
+            await user.save();
+            return res.status(500).json({ success: false, error: 'Email could not be sent.' });
+        }
+    } catch (err) {
+        next(err);
+    }
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = async (req, res, next) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+
+        if (!email || !otp || !newPassword) {
+            return res.status(400).json({ success: false, error: 'Please provide email, OTP, and new password.' });
+        }
+
+        const user = await User.findOne({ email: email.toLowerCase() });
+
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found.' });
+        }
+
+        if (user.resetPasswordOTP !== otp) {
+            return res.status(400).json({ success: false, error: 'Invalid OTP.' });
+        }
+
+        if (user.resetPasswordExpire < Date.now()) {
+            return res.status(400).json({ success: false, error: 'OTP has expired.' });
+        }
+
+        // Update password
+        user.password = newPassword;
+        user.resetPasswordOTP = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Password reset successful. You can now log in with your new password.'
+        });
     } catch (err) {
         next(err);
     }

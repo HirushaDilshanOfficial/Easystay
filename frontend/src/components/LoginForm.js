@@ -121,7 +121,10 @@ const LoginForm = () => {
                 />
 
                 <div className="flex justify-end">
-                    <span className="text-sm text-indigo-600 cursor-pointer hover:underline font-medium">
+                    <span
+                        className="text-sm text-indigo-600 cursor-pointer hover:underline font-medium"
+                        onClick={() => navigate('/forgot-password')}
+                    >
                         Forgot password?
                     </span>
                 </div>

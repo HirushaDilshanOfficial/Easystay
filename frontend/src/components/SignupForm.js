@@ -111,6 +111,9 @@ const SignupForm = () => {
         boardingDocuments: null,
     });
 
+    const [otp, setOtp] = useState('');
+    const [resendLoading, setResendLoading] = useState(false);
+
     const handleChange = (e) =>
         setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -150,7 +153,10 @@ const SignupForm = () => {
             const data = await authService.signup(payload, selectedRole);
 
             if (data.success) {
-                if (data.user?.status === 'Pending') {
+                if (selectedRole === 'Student') {
+                    setStep(3); // OTP Verification Step
+                    setSuccessMsg('A verification code has been sent to your email.');
+                } else if (data.user?.status === 'Pending') {
                     setSuccessMsg('Registration submitted! Your account is pending admin approval.');
                 } else {
                     navigate('/dashboard');
@@ -160,6 +166,41 @@ const SignupForm = () => {
             setError(err.response?.data?.error || 'Signup failed. Please check your details and try again.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            const data = await authService.verifyOTP(formData.email, otp);
+            if (data.success) {
+                setSuccessMsg('Email verified successfully! Redirecting...');
+                setTimeout(() => {
+                    navigate('/dashboard');
+                }, 2000);
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || 'Verification failed. Please check the code.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResendOtp = async () => {
+        setError('');
+        setResendLoading(true);
+        try {
+            const data = await authService.resendOTP(formData.email);
+            if (data.success) {
+                setSuccessMsg('A new verification code has been sent.');
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to resend OTP.');
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -214,6 +255,71 @@ const SignupForm = () => {
                         Sign in to your account →
                     </span>
                 </Typography>
+            </div>
+        );
+    }
+
+    // ─── STEP 3: OTP Verification ───────────────────────────────────────────
+    if (step === 3) {
+        return (
+            <div className="glass-card p-10 w-full">
+                <div className="mb-6 text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-600">
+                        <EmailIcon fontSize="large" />
+                    </div>
+                    <Typography variant="h5" className="font-extrabold text-gray-900">
+                        Verify your email
+                    </Typography>
+                    <Typography variant="body2" className="text-gray-500 mt-2">
+                        We've sent a 6-digit code to <span className="font-semibold text-gray-800">{formData.email}</span>.
+                    </Typography>
+                </div>
+
+                {error && <Alert severity="error" className="mb-4" sx={{ borderRadius: '12px' }}>{error}</Alert>}
+                {successMsg && <Alert severity="success" className="mb-4" sx={{ borderRadius: '12px' }}>{successMsg}</Alert>}
+
+                <Box component="form" onSubmit={handleVerifyOtp} className="space-y-6">
+                    <TextField
+                        fullWidth
+                        label="6-Digit OTP"
+                        variant="outlined"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        placeholder="000 000"
+                        required
+                        sx={{
+                            ...inputSx,
+                            '& .MuiOutlinedInput-input': {
+                                textAlign: 'center',
+                                fontSize: '1.5rem',
+                                letterSpacing: '8px',
+                                fontWeight: 'bold'
+                            }
+                        }}
+                    />
+
+                    <button
+                        type="submit"
+                        disabled={loading || otp.length !== 6}
+                        className="gradient-btn w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    >
+                        {loading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'Verify & Continue'}
+                    </button>
+
+                    <div className="text-center">
+                        <Typography variant="body2" className="text-gray-500">
+                            Didn't receive the code?{' '}
+                            <button
+                                type="button"
+                                onClick={handleResendOtp}
+                                disabled={resendLoading}
+                                className="text-blue-600 font-bold hover:underline disabled:opacity-50"
+                            >
+                                {resendLoading ? 'Resending...' : 'Resend OTP'}
+                            </button>
+                        </Typography>
+                    </div>
+                </Box>
             </div>
         );
     }

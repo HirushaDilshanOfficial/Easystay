@@ -61,9 +61,9 @@ const Login = () => {
                             "EasyStay made finding accommodation so seamless. The platform is intuitive and the listings are always up to date."
                         </p>
                         <div className="flex items-center gap-3 mt-4">
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold">A</div>
+                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-pink-400 flex items-center justify-center text-white text-sm font-bold">CJ</div>
                             <div>
-                                <p className="text-white text-sm font-semibold">Wethmi Wijethilaka</p>
+                                <p className="text-white text-sm font-semibold">Chathura Jayashan</p>
                                 <p className="text-purple-300 text-xs">Student, University of SLIIT</p>
                             </div>
                         </div>

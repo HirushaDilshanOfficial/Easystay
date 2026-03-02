@@ -47,6 +47,29 @@ const getCurrentUser = () => {
     return JSON.parse(localStorage.getItem('user'));
 };
 
-const authService = { login, signup, logout, getCurrentUser };
+const verifyOTP = async (email, otp) => {
+    const response = await axios.post(`${API_URL}/verify-otp`, { email, otp });
+    if (response.data.token) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+    }
+    return response.data;
+};
+
+const resendOTP = async (email) => {
+    const response = await axios.post(`${API_URL}/resend-otp`, { email });
+    return response.data;
+};
+
+const forgotPassword = async (email) => {
+    const response = await axios.post(`${API_URL}/forgot-password`, { email });
+    return response.data;
+};
+
+const resetPassword = async (email, otp, newPassword) => {
+    const response = await axios.post(`${API_URL}/reset-password`, { email, otp, newPassword });
+    return response.data;
+};
+
+const authService = { login, signup, logout, getCurrentUser, verifyOTP, resendOTP, forgotPassword, resetPassword };
 
 export default authService;

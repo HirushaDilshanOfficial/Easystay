@@ -60,6 +60,30 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    loyaltyPoints: {
+        type: Number,
+        default: 0
+    },
+    isVerified: {
+        type: Boolean,
+        default: true // Default true, but will be set to false for students
+    },
+    otp: {
+        type: String,
+        default: null
+    },
+    otpExpire: {
+        type: Date,
+        default: null
+    },
+    resetPasswordOTP: {
+        type: String,
+        default: null
+    },
+    resetPasswordExpire: {
+        type: Date,
+        default: null
     }
 });
 

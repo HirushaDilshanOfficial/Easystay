@@ -30,9 +30,22 @@ app.get("/", (req, res) => {
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
-    console.log("✅ MongoDB Connected Successfully");
-    app.listen(process.env.PORT || 5000, () => {
-      console.log(`🚀 Server running on port ${process.env.PORT || 5000}`);
+    console.log(" MongoDB Connected Successfully ✅ ");
+    const PORT = process.env.PORT || 5000;
+    const server = app.listen(PORT, () => {
+      console.log(` Server running on port ${PORT}`);
+    });
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`❌ Port ${PORT} is already in use.`);
+        console.error(`   Fix: Run this command to free the port:`);
+        console.error(`   lsof -ti:${PORT} | xargs kill -9`);
+        console.error(`   Then run npm start again.`);
+        process.exit(1);
+      } else {
+        throw err;
+      }
     });
   })
   .catch((err) => {

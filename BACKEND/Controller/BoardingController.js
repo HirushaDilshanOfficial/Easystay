@@ -7,6 +7,10 @@ const Boarding = require("../Model/BoardingModel");
 // ─────────────────────────────────────────────
 const addBoarding = async (req, res) => {
     try {
+        console.log("--- New Boarding Request ---");
+        console.log("Body Key Count:", Object.keys(req.body).length);
+        console.log("Files Count:", req.files ? req.files.length : 0);
+
         const {
             title,
             description,

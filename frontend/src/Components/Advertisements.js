@@ -9,7 +9,7 @@ const PACKAGES = [
     price: 999,
     duration: "7 Days",
     color: "#6B7280",
-    features: ["1 Photo Upload", "Basic Listing", "Phone Visibility", "7-Day Exposure"],
+    features: ["Photo Upload", "Basic Listing", "Phone Visibility", "7-Day Exposure"],
     badge: null,
   },
   {
@@ -18,7 +18,7 @@ const PACKAGES = [
     price: 2499,
     duration: "14 Days",
     color: "#2563EB",
-    features: ["3 Photo Uploads", "Featured Listing", "Phone + WhatsApp", "14-Day Exposure", "Priority Support"],
+    features: ["Photo Uploads", "Featured Listing", "Phone + WhatsApp", "14-Day Exposure", "Priority Support"],
     badge: "Popular",
   },
   {
@@ -27,7 +27,7 @@ const PACKAGES = [
     price: 4999,
     duration: "30 Days",
     color: "#D97706",
-    features: ["Unlimited Photos", "Top Banner Slot", "All Contact Options", "30-Day Exposure", "24/7 Support", "Analytics"],
+    features: ["Photo Uploads", "Top Banner Slot", "All Contact Options", "30-Day Exposure", "24/7 Support"],
     badge: "Best Value",
   },
 ];
@@ -153,7 +153,7 @@ export default function AdvertisementManagement() {
   const stepLabels = ["Choose Package", "Ad Details", "Payment"];
 
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", background: "#0D0F14", color: "#E8EAED", position: "relative" }}>
+    <div style={{ fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", background: "#000000", color: "#E8EAED", position: "relative" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&display=swap');
         *{margin:0;padding:0;box-sizing:border-box;}
@@ -187,7 +187,7 @@ export default function AdvertisementManagement() {
               <rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>
             </svg>
           </div>
-          BoardingHub
+          EasyStay
         </div>
         <nav style={{ display:"flex", gap:4 }}>
           {[["dashboard","📋  My Ads"],["create","＋  New Ad"]].map(([v, label]) => (
@@ -208,7 +208,7 @@ export default function AdvertisementManagement() {
         {view === "dashboard" && (
           <div style={{ animation:"fadeUp 0.4s ease" }}>
             <div style={{ marginBottom:32 }}>
-              <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:700, color:"#F9FAFB", marginBottom:6 }}>
+              <h1 style={{ fontFamily:"'Playfair Display',serif", fontSize:30, fontWeight:700, color:"#ffffff", marginBottom:6 }}>
                 Advertisement Management
               </h1>
               <p style={{ fontSize:14, color:"#4B5563" }}>Create and manage your Advertisements</p>

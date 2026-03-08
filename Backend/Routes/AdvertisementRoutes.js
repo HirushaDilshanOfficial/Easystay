@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 //Insert Model
-const Advertisement = require('../Model/AdvertisementModel');
+const Advertisement = require('../models/AdvertisementModel');
 //Insert Controller
 const AdvertisementController = require('../Controllers/AdvertisementControllers');
 

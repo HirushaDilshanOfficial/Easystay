@@ -1,4 +1,4 @@
-const Advertisement = require('../Model/AdvertisementModel');
+const Advertisement = require('../models/AdvertisementModel');
 
 // GET all advertisements
 const getAllAdvertisements = async (req, res) => {

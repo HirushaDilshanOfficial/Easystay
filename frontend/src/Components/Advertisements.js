@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-const API_BASE = "http://localhost:5000/Advertisement";
+const API_BASE = "http://localhost:5000/api/advertisements";
 
 const PACKAGES = [
   {

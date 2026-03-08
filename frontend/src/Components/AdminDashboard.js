@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 
-const API = "http://localhost:5000/Advertisement";
+const API = "http://localhost:5000/api/advertisements";
 const C = { pending:"#F59E0B", approved:"#10B981", rejected:"#EF4444", basic:"#6B7280", standard:"#3B82F6", premium:"#D97706" };
 const PKG_PRICES = { basic:999, standard:2499, premium:4999 };
 

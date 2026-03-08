@@ -1,24 +1,28 @@
-import logo from './logo.svg';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from './components/Navbar';
+import HomePage from './pages/HomePage';
+import AdminDashboard from './pages/AdminDashboard';
+import AddEditBoardingPage from './pages/AddEditBoardingPage';
+import BoardingDetailsPage from './pages/BoardingDetailsPage';
 import './App.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="App">
+        <Navbar />
+        <main className="main-content">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/add" element={<AddEditBoardingPage />} />
+            <Route path="/edit/:id" element={<AddEditBoardingPage />} />
+            <Route path="/boarding/:id" element={<BoardingDetailsPage />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 }
 

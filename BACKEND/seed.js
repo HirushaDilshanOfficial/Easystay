@@ -74,7 +74,7 @@ const seedDatabase = async () => {
         const sampleData = [
             {
                 title: "Modern SLIIT Boys Boarding - Malabe",
-                description: "Brand new modern boarding facility very close to SLIIT Malabe. Includes high-speed SLT fiber, fully tiled floors, and luxury attached bathrooms.",
+                description: "Brand new modern boarding facility very close to SLIIT Malabe. Includes high-speed SLT fiber, fully tiled floors, luxury attached bathrooms, and a shared dining area.",
                 address: "New Kandy Road, Pittugala, Malabe",
                 distanceFromUniversity: 0.5,
                 pricePerMonth: 22000,
@@ -85,7 +85,7 @@ const seedDatabase = async () => {
                 rating: 4.8,
                 contactNumber: "0771234567",
                 ownerName: "Kasun Jayasuriya",
-                images: ["ikman1.jpg"], 
+                images: ["ikman3.jpg", "modern_room_0.jpg", "ikman5.jpg"], 
                 videos: []
             },
             {
@@ -101,7 +101,7 @@ const seedDatabase = async () => {
                 rating: 4.5,
                 contactNumber: "0712348899",
                 ownerName: "Champa Wijeratne",
-                images: ["ikman2.jpg"],
+                images: ["ikman2.jpg", "modern_room_1.jpg", "ikman4.jpg"],
                 videos: []
             },
             {
@@ -117,7 +117,7 @@ const seedDatabase = async () => {
                 rating: 5.0,
                 contactNumber: "0777999888",
                 ownerName: "Anil Fernando",
-                images: ["ikman3.jpg"],
+                images: ["ikman3.jpg", "modern_room_2.jpg", "modern_room_4.jpg"],
                 videos: []
             },
             {
@@ -133,7 +133,7 @@ const seedDatabase = async () => {
                 rating: 4.2,
                 contactNumber: "0772345678",
                 ownerName: "Gayan Bandara",
-                images: ["ikman4.jpg"],
+                images: ["ikman4.jpg", "modern_room_3.jpg", "ikman1.jpg"],
                 videos: []
             },
             {
@@ -149,7 +149,7 @@ const seedDatabase = async () => {
                 rating: 4.5,
                 contactNumber: "0213336689",
                 ownerName: "Thilaga Krishnaswamy",
-                images: ["ikman5.jpg"],
+                images: ["ikman5.jpg", "modern_room_4.jpg", "ikman2.jpg"],
                 videos: []
             },
             {
@@ -165,7 +165,7 @@ const seedDatabase = async () => {
                 rating: 5.0,
                 contactNumber: "0112677890",
                 ownerName: "Nandani Fernando",
-                images: [getImage(5)],
+                images: [getImage(5), getImage(6), getImage(1)],
                 videos: []
             },
             {
@@ -181,7 +181,7 @@ const seedDatabase = async () => {
                 rating: 4.0,
                 contactNumber: "0112910345",
                 ownerName: "Priyantha Rupasinghe",
-                images: [getImage(6)],
+                images: [getImage(6), getImage(7), getImage(2)],
                 videos: []
             },
             {
@@ -197,7 +197,7 @@ const seedDatabase = async () => {
                 rating: 4.6,
                 contactNumber: "0412224567",
                 ownerName: "Malini Disanayake",
-                images: [getImage(7)],
+                images: [getImage(7), getImage(8), getImage(3)],
                 videos: []
             },
             {
@@ -213,7 +213,7 @@ const seedDatabase = async () => {
                 rating: 3.9,
                 contactNumber: "0632222345",
                 ownerName: "Aruna Wijesinghe",
-                images: [getImage(8)],
+                images: [getImage(8), getImage(9), getImage(4)],
                 videos: []
             },
             {
@@ -229,7 +229,7 @@ const seedDatabase = async () => {
                 rating: 4.7,
                 contactNumber: "0331223456",
                 ownerName: "Sunethra Jayawardena",
-                images: [getImage(9)],
+                images: [getImage(9), getImage(10), getImage(5)],
                 videos: []
             },
             {
@@ -245,7 +245,7 @@ const seedDatabase = async () => {
                 rating: 4.1,
                 contactNumber: "0242234567",
                 ownerName: "Lakshmi Tharmalingam",
-                images: [getImage(10)],
+                images: [getImage(10), getImage(11), getImage(6)],
                 videos: []
             },
             {
@@ -261,7 +261,7 @@ const seedDatabase = async () => {
                 rating: 4.9,
                 contactNumber: "0772987654",
                 ownerName: "Sampath Senaratne",
-                images: [getImage(11)],
+                images: [getImage(11), getImage(12), getImage(7)],
                 videos: []
             },
             {
@@ -277,7 +277,7 @@ const seedDatabase = async () => {
                 rating: 4.8,
                 contactNumber: "0112345670",
                 ownerName: "Mihira Kumara",
-                images: [getImage(12)],
+                images: [getImage(12), getImage(0), getImage(8)],
                 videos: []
             },
             {
@@ -293,7 +293,7 @@ const seedDatabase = async () => {
                 rating: 4.4,
                 contactNumber: "0253456789",
                 ownerName: "Kamala Bandara",
-                images: [getImage(13)],
+                images: [getImage(13), getImage(1), getImage(9)],
                 videos: []
             },
             {
@@ -309,7 +309,7 @@ const seedDatabase = async () => {
                 rating: 4.3,
                 contactNumber: "0371234567",
                 ownerName: "Saman Perera",
-                images: [getImage(14)],
+                images: [getImage(14), getImage(2), getImage(10)],
                 videos: []
             },
             {
@@ -325,7 +325,7 @@ const seedDatabase = async () => {
                 rating: 4.6,
                 contactNumber: "0559876543",
                 ownerName: "Nayana Weerasinghe",
-                images: [getImage(15)],
+                images: [getImage(15), getImage(3), getImage(11)],
                 videos: []
             },
             {
@@ -341,7 +341,7 @@ const seedDatabase = async () => {
                 rating: 4.8,
                 contactNumber: "0456789012",
                 ownerName: "Chandana Rajapakse",
-                images: [getImage(16)],
+                images: [getImage(16), getImage(4), getImage(12)],
                 videos: []
             },
             {
@@ -357,7 +357,7 @@ const seedDatabase = async () => {
                 rating: 4.8,
                 contactNumber: "0812205567",
                 ownerName: "Menike Rajapaksha",
-                images: [getImage(17)],
+                images: [getImage(17), getImage(5), getImage(0)],
                 videos: []
             },
             {
@@ -373,7 +373,7 @@ const seedDatabase = async () => {
                 rating: 3.5,
                 contactNumber: "0788887755",
                 ownerName: "Sunil Wimalasiri",
-                images: [getImage(18)],
+                images: [getImage(18), getImage(6), getImage(1)],
                 videos: []
             },
             {
@@ -389,7 +389,7 @@ const seedDatabase = async () => {
                 rating: 5.0,
                 contactNumber: "0770001122",
                 ownerName: "Malathie Silva",
-                images: [getImage(19)],
+                images: [getImage(19), getImage(7), getImage(2)],
                 videos: []
             }
         ];

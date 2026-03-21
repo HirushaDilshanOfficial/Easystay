@@ -1,18 +1,17 @@
 const express = require('express');
-const router = express.Router();
-//Insert Model
-const Advertisement = require('../Model/AdvertisementModel');
-//Insert Controller
+const router  = express.Router();
 const AdvertisementController = require('../Controllers/AdvertisementControllers');
 
-router.get("/", AdvertisementController.getAllAdvertisements);
-router.post("/", AdvertisementController.addAdvertisement);
-router.get("/:id", AdvertisementController.getById);
-router.put("/:id", AdvertisementController.updateAdvertisement);
-router.delete("/:id", AdvertisementController.deleteAdvertisement);
-//export router
+// Public / Boarding Owner routes
+router.get("/",          AdvertisementController.getAllAdvertisements);  // ?status=pending|approved|rejected
+router.post("/",         AdvertisementController.addAdvertisement);
+router.get("/analytics", AdvertisementController.getAnalytics);          // must be BEFORE /:id
+router.get("/:id",       AdvertisementController.getById);
+router.put("/:id",       AdvertisementController.updateAdvertisement);
+router.delete("/:id",    AdvertisementController.deleteAdvertisement);
+
+// Admin-only routes
+router.put("/:id/approve", AdvertisementController.approveAdvertisement);
+router.put("/:id/reject",  AdvertisementController.rejectAdvertisement);
 
 module.exports = router;
-
-
-

@@ -23,7 +23,7 @@ const advertisementSchema = new Schema({
         required: false,
     },
     paymentSlip: {
-        type: String,   // base64 or URL of the uploaded payment slip
+        type: String,
         required: false,
     },
     packageType: {
@@ -31,6 +31,20 @@ const advertisementSchema = new Schema({
         enum: ['basic', 'standard', 'premium'],
         required: true,
         default: 'basic',
+    },
+    // Admin review fields
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending',
+    },
+    adminNote: {
+        type: String,
+        default: '',
+    },
+    reviewedAt: {
+        type: Date,
+        default: null,
     },
     date: {
         type: Date,

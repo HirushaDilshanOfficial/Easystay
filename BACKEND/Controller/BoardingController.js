@@ -87,7 +87,7 @@ const addBoarding = async (req, res) => {
 // ─────────────────────────────────────────────
 const getAllBoardings = async (req, res) => {
     try {
-        const { minPrice, maxPrice, roomType, genderType, facilities, availability, search } = req.query;
+        const { minPrice, maxPrice, roomType, genderType, facilities, availability, search, maxDistance } = req.query;
 
         const filter = {};
 
@@ -99,6 +99,11 @@ const getAllBoardings = async (req, res) => {
                 { description: searchRegex },
                 { address: searchRegex }
             ];
+        }
+
+        // Distance filter
+        if (maxDistance) {
+            filter.distanceFromUniversity = { $lte: Number(maxDistance) };
         }
 
         // Price filter
@@ -125,7 +130,7 @@ const getAllBoardings = async (req, res) => {
             filter.availability = availability === "true";
         }
 
-        const boardings = await Boarding.find(filter).sort({ createdAt: -1 });
+        const boardings = await Boarding.find(filter).sort({ _id: 1 });
 
         res.status(200).json({
             success: true,

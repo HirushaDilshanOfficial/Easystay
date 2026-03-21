@@ -26,7 +26,7 @@ const BoardingDetailsPage = () => {
     if (!boarding) return <div className="error">Boarding not found</div>;
 
     const imageUrl = boarding.images && boarding.images.length > 0
-        ? `http://localhost:5001/uploads/${boarding.images[0]}`
+        ? (boarding.images[0].startsWith('http') ? boarding.images[0] : `http://localhost:5001/uploads/${boarding.images[0]}`)
         : 'https://via.placeholder.com/800x400?text=No+Image';
 
     return (

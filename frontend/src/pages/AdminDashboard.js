@@ -388,7 +388,11 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
                             <input
                                 type="text"
                                 value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                onChange={(e) => {
+                                    if (/^[a-zA-Z\s]*$/.test(e.target.value)) {
+                                        setFormData({ ...formData, name: e.target.value });
+                                    }
+                                }}
                                 className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
                                 style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
                                 required
@@ -410,7 +414,11 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
                             <input
                                 type="text"
                                 value={formData.phoneNumber}
-                                onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                                onChange={(e) => {
+                                    if (/^\d{0,10}$/.test(e.target.value)) {
+                                        setFormData({ ...formData, phoneNumber: e.target.value });
+                                    }
+                                }}
                                 className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
                                 style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
                             />

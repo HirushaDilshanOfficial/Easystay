@@ -114,8 +114,22 @@ const SignupForm = () => {
     const [otp, setOtp] = useState('');
     const [resendLoading, setResendLoading] = useState(false);
 
-    const handleChange = (e) =>
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        if (name === 'name') {
+            // Allow only letters and spaces
+            if (!/^[a-zA-Z\s]*$/.test(value)) {
+                return;
+            }
+        }
+        if (name === 'phoneNumber') {
+            // Allow only up to 10 digits
+            if (!/^\d{0,10}$/.test(value)) {
+                return;
+            }
+        }
+        setFormData({ ...formData, [name]: value });
+    };
 
     const handleFileChange = (e) => {
         const { name, files } = e.target;
@@ -138,6 +152,11 @@ const SignupForm = () => {
 
         if (formData.password !== formData.confirmPassword) {
             return setError('Passwords do not match.');
+        }
+
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
+        if (!passwordRegex.test(formData.password)) {
+            return setError('Password must be at least 6 characters long, contain 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.');
         }
 
         setLoading(true);
@@ -318,6 +337,15 @@ const SignupForm = () => {
                                 {resendLoading ? 'Resending...' : 'Resend OTP'}
                             </button>
                         </Typography>
+                    </div>
+
+                    <div className="text-center mt-4">
+                        <span
+                            className="text-sm text-indigo-600 cursor-pointer hover:underline font-medium"
+                            onClick={() => navigate('/login')}
+                        >
+                            ← Back to Login
+                        </span>
                     </div>
                 </Box>
             </div>

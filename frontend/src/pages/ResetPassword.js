@@ -45,8 +45,9 @@ const ResetPassword = () => {
             return setError('Passwords do not match.');
         }
 
-        if (newPassword.length < 6) {
-            return setError('Password must be at least 6 characters long.');
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
+        if (!passwordRegex.test(newPassword)) {
+            return setError('Password must be at least 6 characters long, contain 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.');
         }
 
         setLoading(true);
@@ -180,6 +181,15 @@ const ResetPassword = () => {
                         >
                             {loading ? <CircularProgress size={22} sx={{ color: 'white' }} /> : 'Reset Password'}
                         </button>
+
+                        <div className="text-center mt-4">
+                            <span
+                                className="text-sm text-indigo-600 cursor-pointer hover:underline font-medium"
+                                onClick={() => navigate('/login')}
+                            >
+                                ← Back to Login
+                            </span>
+                        </div>
                     </Box>
                 </div>
             </div>

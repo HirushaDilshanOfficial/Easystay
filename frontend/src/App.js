@@ -10,6 +10,9 @@ import Dashboard from './pages/Dashboard';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ProtectedRoute from './components/ProtectedRoute';
+import Home from './pages/Home';
+import LoyaltyDemo from './pages/LoyaltyDemo';
+import PaymentDemo from './pages/PaymentDemo';
 
 function App() {
   return (
@@ -32,7 +35,9 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/loyalty-demo" element={<LoyaltyDemo />} />
+          <Route path="/payment-demo" element={<PaymentDemo />} />
+          <Route path="/" element={<Home />} />
         </Routes>
       </Router>
     </ThemeProvider>

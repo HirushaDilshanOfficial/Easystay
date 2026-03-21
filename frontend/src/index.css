@@ -51,8 +51,15 @@ body {
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-30px) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translateY(0px) scale(1);
+  }
+
+  50% {
+    transform: translateY(-30px) scale(1.05);
+  }
 }
 
 /* Glass card */
@@ -63,19 +70,18 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 24px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.12),
-              0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
 }
 
 /* Gradient button */
 .gradient-btn {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
-  background-size: 200% 200%;
+  background-color: #2563eb;
   transition: all 0.4s ease;
 }
 
 .gradient-btn:hover {
-  background-position: right center;
-  box-shadow: 0 20px 40px rgba(99, 102, 241, 0.4);
+  background-color: #1d4ed8;
+  box-shadow: 0 10px 25px rgba(37, 99, 235, 0.4);
   transform: translateY(-2px);
 }
 
@@ -91,14 +97,19 @@ body {
 
 /* Subtle grid pattern */
 .bg-grid {
-  background-image: radial-gradient(circle at 1px 1px, rgba(99,102,241,0.15) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgba(99, 102, 241, 0.15) 1px, transparent 0);
   background-size: 40px 40px;
 }
 
 /* Shimmer for left panel */
 @keyframes shimmer {
-  0% { transform: translateX(-100%) rotate(45deg); }
-  100% { transform: translateX(300%) rotate(45deg); }
+  0% {
+    transform: translateX(-100%) rotate(45deg);
+  }
+
+  100% {
+    transform: translateX(300%) rotate(45deg);
+  }
 }
 
 .left-panel-shimmer::after {
@@ -108,6 +119,6 @@ body {
   left: 0;
   width: 60%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
   animation: shimmer 4s infinite;
 }

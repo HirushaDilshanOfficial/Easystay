@@ -1,11 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, DollarSign, Star } from 'lucide-react';
+import { MapPin, Star } from 'lucide-react';
 
 const BoardingCard = ({ boarding }) => {
-    // Try to use the first image, or a placeholder if none exists
     const imageUrl = boarding.images && boarding.images.length > 0
-        ? `http://localhost:5001/${boarding.images[0]}`
+        ? `http://localhost:5001/uploads/${boarding.images[0]}`
         : 'https://via.placeholder.com/400x300?text=No+Image';
 
     return (
@@ -25,10 +24,19 @@ const BoardingCard = ({ boarding }) => {
                     <span>{boarding.roomType} Room</span>
                     <span>{boarding.genderType}</span>
                 </div>
+                
+                {boarding.facilities && boarding.facilities.length > 0 && (
+                    <div className="card-facilities" style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '15px' }}>
+                        {boarding.facilities.map((fac, idx) => (
+                            <span key={idx} style={{ fontSize: '12px', background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: '10px' }}>
+                                {fac === 'Food' ? 'Meals Included' : fac}
+                            </span>
+                        ))}
+                    </div>
+                )}
                 <div className="card-footer">
                     <div className="price">
-                        <DollarSign size={16} />
-                        <span>{boarding.pricePerMonth}/mo</span>
+                        <span>LKR {boarding.pricePerMonth.toLocaleString()}/mo</span>
                     </div>
                     <Link to={`/boarding/${boarding._id}`} className="btn-primary">
                         View Details

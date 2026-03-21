@@ -87,9 +87,19 @@ const addBoarding = async (req, res) => {
 // ─────────────────────────────────────────────
 const getAllBoardings = async (req, res) => {
     try {
-        const { minPrice, maxPrice, roomType, genderType, facilities, availability } = req.query;
+        const { minPrice, maxPrice, roomType, genderType, facilities, availability, search } = req.query;
 
         const filter = {};
+
+        // Search filter (locations, campus, keywords in title, description, address)
+        if (search) {
+            const searchRegex = new RegExp(search, "i"); // case-insensitive
+            filter.$or = [
+                { title: searchRegex },
+                { description: searchRegex },
+                { address: searchRegex }
+            ];
+        }
 
         // Price filter
         if (minPrice || maxPrice) {

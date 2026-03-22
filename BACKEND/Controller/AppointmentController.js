@@ -1,6 +1,6 @@
 const Appointment = require("../Model/AppointmentModel");
 
-// Default availability slots (9 AM to 6 PM)
+
 const DEFAULT_SLOTS = [
     "09:00 AM",
     "10:00 AM",

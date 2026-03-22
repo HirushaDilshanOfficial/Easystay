@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from "react";
 const API = "http://localhost:5000/api/advertisements";
 
 const PKG_COLOR = { premium: "#D97706", standard: "#2563EB", basic: "#6B7280" };
-const PKG_LABEL = { premium: "👑 Premium", standard: "⭐ Standard", basic: "📌 Basic" };
+const PKG_LABEL = { premium: "Premium", standard: "Standard", basic: "Basic" };
 
 // Detail Modal
 function AdDetailModal({ ad, onClose }) {

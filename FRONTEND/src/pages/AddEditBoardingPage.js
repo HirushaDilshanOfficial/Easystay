@@ -18,13 +18,20 @@ const AddEditBoardingPage = () => {
         availability: true,
         contactNumber: '',
         ownerName: '',
-        bankName: '',
-        accountNumber: '',
-        depositAmount: '',
+        ownerId: '',
     });
 
+    useEffect(() => {
+        if (isAddMode && !formData.ownerId) {
+            const randomId = "OWNER-" + Math.random().toString(36).substr(2, 6).toUpperCase();
+            setFormData(prev => ({ ...prev, ownerId: randomId }));
+        }
+    }, [isAddMode]);
+
     const [facilities, setFacilities] = useState([]);
-    const [files, setFiles] = useState(null);
+    const [mediaFiles, setMediaFiles] = useState(null);
+    const [slipFile, setSlipFile] = useState(null);
+    const [nicFile, setNicFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -47,9 +54,7 @@ const AddEditBoardingPage = () => {
                         availability: p.availability,
                         contactNumber: p.contactNumber || '',
                         ownerName: p.ownerName || '',
-                        bankName: p.bankName || '',
-                        accountNumber: p.accountNumber || '',
-                        depositAmount: p.depositAmount || '',
+                        ownerId: p.ownerId || '',
                     });
                     setFacilities(p.facilities || []);
                 } catch (err) {
@@ -77,8 +82,16 @@ const AddEditBoardingPage = () => {
         }
     };
 
-    const handleFileChange = (e) => {
-        setFiles(e.target.files);
+    const handleMediaChange = (e) => {
+        setMediaFiles(e.target.files);
+    };
+
+    const handleSlipChange = (e) => {
+        setSlipFile(e.target.files[0]);
+    };
+
+    const handleNicChange = (e) => {
+        setNicFile(e.target.files[0]);
     };
 
     const handleSubmit = async (e) => {
@@ -93,11 +106,19 @@ const AddEditBoardingPage = () => {
         });
         // Append array
         facilities.forEach(f => submitData.append('facilities', f));
-        // Append files
-        if (files) {
-            for (let i = 0; i < files.length; i++) {
-                submitData.append('media', files[i]);
+        // Append Media Files
+        if (mediaFiles) {
+            for (let i = 0; i < mediaFiles.length; i++) {
+                submitData.append('media', mediaFiles[i]);
             }
+        }
+        // Append Slip File
+        if (slipFile) {
+            submitData.append('slip', slipFile);
+        }
+        // Append NIC File
+        if (nicFile) {
+            submitData.append('nic', nicFile);
         }
 
         try {
@@ -176,13 +197,24 @@ const AddEditBoardingPage = () => {
                         </div>
 
                         <div className="form-group">
-                            <label>Owner Name</label>
-                            <input type="text" name="ownerName" value={formData.ownerName} onChange={handleChange} />
+                            <label>Owner Name * (Must exactly match NIC)</label>
+                            <input type="text" name="ownerName" value={formData.ownerName} onChange={handleChange} required placeholder="As per NIC" />
                         </div>
 
                         <div className="form-group">
-                            <label>Contact Number</label>
-                            <input type="text" name="contactNumber" value={formData.contactNumber} onChange={handleChange} />
+                            <label>Contact Number *</label>
+                            <input type="text" name="contactNumber" value={formData.contactNumber} onChange={handleChange} required />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Unique Owner ID * (Write this down!)</label>
+                            <input type="text" name="ownerId" value={formData.ownerId} onChange={handleChange} required readOnly />
+                            <small className="text-muted">Generated automatically for your safety.</small>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Upload NIC Photo * (Proof of Identity)</label>
+                            <input type="file" name="nic" onChange={handleNicChange} required={isAddMode} accept="image/*" />
                         </div>
 
                         <div className="form-group full-width">
@@ -209,29 +241,25 @@ const AddEditBoardingPage = () => {
                             </label>
                         </div>
 
-                        <div className="form-group full-width section-title">
-                            <h3>Payment Details (For Deposit)</h3>
+                        <div className="form-group full-width bank-info-box">
+                            <p>Please deposit the listing fee to the following account:</p>
+                            <div className="bank-details-card">
+                                <div><strong>Account Holder:</strong> EasyStay</div>
+                                <div><strong>Bank:</strong> BOC Kollupitiya branch</div>
+                                <div><strong>Account Num:</strong> 876543</div>
+                            </div>
+                            <p className="payment-note">Note: <strong>7499/per ad</strong> need to pay twice a month until boarding filled.</p>
                         </div>
 
                         <div className="form-group">
-                            <label>Bank Name *</label>
-                            <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} required={isAddMode} placeholder="e.g. Bank of Ceylon" />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Account Number *</label>
-                            <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} required={isAddMode} />
-                        </div>
-
-                        <div className="form-group">
-                            <label>Deposit Amount to Pay (LKR) *</label>
-                            <input type="number" name="depositAmount" value={formData.depositAmount} onChange={handleChange} required={isAddMode} min="0" />
+                            <label>Deposit Slip * (PDF/Image)</label>
+                            <input type="file" name="slip" onChange={handleSlipChange} required={isAddMode} accept="image/*,.pdf" />
+                            <small className="payment-note" style={{ display: 'block', marginTop: '5px' }}>Fee: <strong>7499 LKR</strong> per ad.</small>
                         </div>
 
                         <div className="form-group full-width">
-                            <label>Upload Deposit Slip & Property Images/Videos (First file MUST be the Deposit Slip) *</label>
-                            <input type="file" multiple name="media" onChange={handleFileChange} required={isAddMode} />
-                            <small className="text-info" style={{ display: 'block', marginBottom: '10px' }}>Important: The very first file you select will be used as the proof of payment.</small>
+                            <label>Upload Property Photos/Videos</label>
+                            <input type="file" multiple name="media" onChange={handleMediaChange} />
                             {!isAddMode && <small className="text-muted block">Note: Uploading new files will replace existing ones.</small>}
                         </div>
                     </div>

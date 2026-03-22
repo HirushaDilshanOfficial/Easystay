@@ -9,8 +9,8 @@ const Appointment = require("../Model/AppointmentModel");
 const addBoarding = async (req, res) => {
     try {
         console.log("--- New Boarding Request ---");
-        console.log("Body Key Count:", Object.keys(req.body).length);
-        console.log("Files Count:", req.files ? req.files.length : 0);
+        console.log("Body:", req.body);
+        console.log("Files Field Names:", req.files ? Object.keys(req.files) : "None");
 
         const {
             title,
@@ -26,34 +26,45 @@ const addBoarding = async (req, res) => {
             contactNumber,
             ownerName,
             depositAmount,
-            bankName,
-            accountNumber,
         } = req.body;
+
+        let ownerId = req.body.ownerId;
+        if (!ownerId || ownerId === "") {
+            ownerId = "OWNER-" + Math.random().toString(36).substr(2, 9).toUpperCase();
+        }
 
         // Collect uploaded file paths
         const images = [];
         const videos = [];
 
         let depositSlip = null;
+        let nicPhoto = null;
 
         if (req.files) {
-            req.files.forEach((file, index) => {
-                const ext = file.originalname.split(".").pop().toLowerCase();
-                const imageExts = ["jpg", "jpeg", "png", "webp"];
-                const videoExts = ["mp4", "mov", "avi", "mkv"];
+            // Handle Deposit Slip
+            if (req.files['slip'] && req.files['slip'][0]) {
+                depositSlip = req.files['slip'][0].filename;
+            }
 
-                // If it's the first file and we assume it's the slip (or we could check fieldname if using multer differently)
-                // For now, if multiple files, we'll assume the FIRST one is the deposit slip if files are present
-                if (imageExts.includes(ext)) {
-                    if (index === 0) {
-                        depositSlip = file.filename;
-                    } else {
+            // Handle NIC Photo
+            if (req.files['nic'] && req.files['nic'][0]) {
+                nicPhoto = req.files['nic'][0].filename;
+            }
+
+            // Handle Property Media
+            if (req.files['media']) {
+                req.files['media'].forEach((file) => {
+                    const ext = file.originalname.split(".").pop().toLowerCase();
+                    const imageExts = ["jpg", "jpeg", "png", "webp"];
+                    const videoExts = ["mp4", "mov", "avi", "mkv"];
+
+                    if (imageExts.includes(ext)) {
                         images.push(file.filename);
+                    } else if (videoExts.includes(ext)) {
+                        videos.push(file.filename);
                     }
-                } else if (videoExts.includes(ext)) {
-                    videos.push(file.filename);
-                }
-            });
+                });
+            }
         }
 
         // Parse facilities if it comes as a string (from form-data)
@@ -75,10 +86,10 @@ const addBoarding = async (req, res) => {
             rating: rating || 0,
             contactNumber,
             ownerName,
-            depositAmount: Number(depositAmount) || 0,
-            bankName,
-            accountNumber,
+            ownerId,
+            depositAmount: 7499, // Fixed plan
             depositSlip,
+            nicPhoto,
             isApproved: false, // All new listings start as unapproved
         });
 
@@ -89,9 +100,10 @@ const addBoarding = async (req, res) => {
             data: savedBoarding,
         });
     } catch (error) {
+        console.error("ADD BOARDING ERROR:", error);
         res.status(500).json({
             success: false,
-            message: "Failed to add boarding listing",
+            message: "Failed to add boarding listing: " + error.message,
             error: error.message,
         });
     }
@@ -219,11 +231,17 @@ const updateBoarding = async (req, res) => {
         }
 
         // Handle newly uploaded files (if any)
-        if (req.files && req.files.length > 0) {
+        if (req.files) {
             const newImages = [];
             const newVideos = [];
 
-            req.files.forEach((file) => {
+            // Combine all files from all fields (slip, nic, media) for gallery processing if desired
+            // Or just process 'media' field for the gallery
+            const mediaFiles = req.files['media'] || [];
+            const slipFiles = req.files['slip'] || [];
+            const nicFiles = req.files['nic'] || [];
+
+            [...mediaFiles, ...slipFiles, ...nicFiles].forEach((file) => {
                 const ext = file.originalname.split(".").pop().toLowerCase();
                 const imageExts = ["jpg", "jpeg", "png", "webp"];
                 const videoExts = ["mp4", "mov", "avi", "mkv"];
@@ -235,8 +253,11 @@ const updateBoarding = async (req, res) => {
                 }
             });
 
-            req.body.images = [...(boarding.images || []), ...newImages];
-            req.body.videos = [...(boarding.videos || []), ...newVideos];
+            if (slipFiles.length > 0) req.body.depositSlip = slipFiles[0].filename;
+            if (nicFiles.length > 0) req.body.nicPhoto = nicFiles[0].filename;
+
+            if (newImages.length > 0) req.body.images = [...(boarding.images || []), ...newImages];
+            if (newVideos.length > 0) req.body.videos = [...(boarding.videos || []), ...newVideos];
         }
 
         const updatedBoarding = await Boarding.findByIdAndUpdate(
@@ -251,9 +272,10 @@ const updateBoarding = async (req, res) => {
             data: updatedBoarding,
         });
     } catch (error) {
+        console.error("UPDATE BOARDING ERROR:", error);
         res.status(500).json({
             success: false,
-            message: "Failed to update boarding listing",
+            message: "Failed to update boarding listing: " + error.message,
             error: error.message,
         });
     }
@@ -327,15 +349,17 @@ const approveBoarding = async (req, res) => {
 
 // ─────────────────────────────────────────────
 // @desc    Get appointments for an owner's boardings
-// @route   GET /api/boardings/owner/appointments/:ownerName
+// @route   GET /api/boardings/owner/appointments/:ownerId
 // @access  Owner
 // ─────────────────────────────────────────────
 const getOwnerAppointments = async (req, res) => {
     try {
-        const { ownerName } = req.params;
+        const { ownerId } = req.params;
+        console.log("Fetching appointments for ownerId:", ownerId);
 
-        // Find all boardings by this owner
-        const ownerBoardings = await Boarding.find({ ownerName });
+        // Find all boardings by this ownerId
+        const ownerBoardings = await Boarding.find({ ownerId });
+        console.log("Found boardings count:", ownerBoardings.length);
         const boardingIds = ownerBoardings.map((b) => b._id);
 
         // Find appointments for these boardings

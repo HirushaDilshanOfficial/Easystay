@@ -68,19 +68,19 @@ const boardingSchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
+        ownerId: {
+            type: String, // Unique ID for owner dashboard access
+            required: true,
+        },
         // --- Payment & Admin Fields ---
         depositAmount: {
             type: Number,
-            required: true,
-            default: 0,
-        },
-        bankName: {
-            type: String,
-        },
-        accountNumber: {
-            type: String,
+            default: 7499, // Standard plan
         },
         depositSlip: {
+            type: String, // Filename in uploads folder
+        },
+        nicPhoto: {
             type: String, // Filename in uploads folder
         },
         isApproved: {

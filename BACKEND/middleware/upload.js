@@ -21,12 +21,12 @@ const storage = multer.diskStorage({
 
 // File filter – allow only images and videos
 const fileFilter = function (req, file, cb) {
-    const allowedTypes = /jpeg|jpg|png|webp|mp4|mov|avi|mkv/;
+    const allowedTypes = /jpeg|jpg|png|webp|mp4|mov|avi|mkv|pdf/;
     const ext = path.extname(file.originalname).toLowerCase().slice(1);
     if (allowedTypes.test(ext)) {
         cb(null, true);
     } else {
-        cb(new Error("Only image (jpg, png, webp) and video (mp4, mov) files allowed!"), false);
+        cb(new Error("Only image (jpg, png, webp, pdf) and video (mp4, mov) files allowed!"), false);
     }
 };
 

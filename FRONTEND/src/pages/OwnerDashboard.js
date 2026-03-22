@@ -3,13 +3,13 @@ import api from '../api';
 import { User, Phone, Mail, Calendar, Clock, Home, MapPin } from 'lucide-react';
 
 const OwnerDashboard = () => {
-    const [ownerName, setOwnerName] = useState(localStorage.getItem('ownerName') || '');
+    const [ownerId, setOwnerId] = useState(localStorage.getItem('ownerId') || '');
     const [appointments, setAppointments] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('ownerName'));
+    const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('ownerId'));
 
     useEffect(() => {
-        if (isLoggedIn && ownerName) {
+        if (isLoggedIn && ownerId) {
             fetchAppointments();
         }
     }, [isLoggedIn]);
@@ -17,7 +17,7 @@ const OwnerDashboard = () => {
     const fetchAppointments = async () => {
         setLoading(true);
         try {
-            const res = await api.get(`/boardings/owner/appointments/${ownerName}`);
+            const res = await api.get(`/boardings/owner/appointments/${ownerId}`);
             setAppointments(res.data.data);
         } catch (err) {
             console.error('Failed to fetch appointments:', err);
@@ -28,14 +28,14 @@ const OwnerDashboard = () => {
 
     const handleLogin = (e) => {
         e.preventDefault();
-        if (ownerName.trim()) {
-            localStorage.setItem('ownerName', ownerName);
+        if (ownerId.trim()) {
+            localStorage.setItem('ownerId', ownerId);
             setIsLoggedIn(true);
         }
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('ownerName');
+        localStorage.removeItem('ownerId');
         setIsLoggedIn(false);
         setAppointments([]);
     };
@@ -49,9 +49,9 @@ const OwnerDashboard = () => {
                     <form onSubmit={handleLogin}>
                         <input 
                             type="text" 
-                            placeholder="Your Registered Owner Name" 
-                            value={ownerName} 
-                            onChange={(e) => setOwnerName(e.target.value)}
+                            placeholder="Enter your Unique Owner ID" 
+                            value={ownerId} 
+                            onChange={(e) => setOwnerId(e.target.value)}
                             required
                         />
                         <button type="submit" className="btn-primary full-width">View Appointments</button>
@@ -65,8 +65,8 @@ const OwnerDashboard = () => {
         <div className="owner-dashboard">
             <div className="dashboard-header">
                 <div>
-                    <h1>Welcome, {ownerName}</h1>
-                    <p>Manage your student viewing appointments</p>
+                    <h1>Owner Dashboard</h1>
+                    <p>ID: <strong>{ownerId}</strong></p>
                 </div>
                 <button onClick={handleLogout} className="btn-secondary">Logout</button>
             </div>

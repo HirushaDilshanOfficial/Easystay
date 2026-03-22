@@ -64,6 +64,58 @@ const HomePage = () => {
                         className="search-input"
                     />
                 </div>
+
+                <div className="ad-banner-container">
+                    <div className="ad-banner-label">Student Services & Events</div>
+                    <div className="marquee">
+                        <div className="marquee-content">
+                            <div className="ad-item">
+                                <span className="ad-tag">LAUNDRY</span>
+                                <span className="ad-text">Clean & Press Services <span className="ad-subtext">Free pickup for students!</span></span>
+                            </div>
+                            <div className="ad-item">
+                                <span className="ad-tag">EVENT</span>
+                                <span className="ad-text">SLIIT Tech Fest 2024 <span className="ad-subtext">Join the future of tech.</span></span>
+                            </div>
+                            <div className="ad-item">
+                                <span className="ad-tag">FOOD</span>
+                                <span className="ad-text">Campus Canteen Deals <span className="ad-subtext">20% off with ID.</span></span>
+                            </div>
+                            <div className="ad-item">
+                                <span className="ad-tag">GYM</span>
+                                <span className="ad-text">FitLife Fitness <span className="ad-subtext">Student membership only 2500/-</span></span>
+                            </div>
+                            {/* Duplicate for infinite loop */}
+                            <div className="ad-item">
+                                <span className="ad-tag">LAUNDRY</span>
+                                <span className="ad-text">Clean & Press Services <span className="ad-subtext">Free pickup!</span></span>
+                            </div>
+                            <div className="ad-item">
+                                <span className="ad-tag">EVENT</span>
+                                <span className="ad-text">SLIIT Tech Fest 2024 <span className="ad-subtext">Join now!</span></span>
+                            </div>
+                        </div>
+                        {/* Second set for seamless transition */}
+                        <div className="marquee-content" aria-hidden="true">
+                            <div className="ad-item">
+                                <span className="ad-tag">LAUNDRY</span>
+                                <span className="ad-text">Clean & Press Services <span className="ad-subtext">Free pickup for students!</span></span>
+                            </div>
+                            <div className="ad-item">
+                                <span className="ad-tag">EVENT</span>
+                                <span className="ad-text">SLIIT Tech Fest 2024 <span className="ad-subtext">Join the future of tech.</span></span>
+                            </div>
+                            <div className="ad-item">
+                                <span className="ad-tag">FOOD</span>
+                                <span className="ad-text">Campus Canteen Deals <span className="ad-subtext">20% off with ID.</span></span>
+                            </div>
+                            <div className="ad-item">
+                                <span className="ad-tag">GYM</span>
+                                <span className="ad-text">FitLife Fitness <span className="ad-subtext">Student membership only 2500/-</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </header>
 
             <div className="home-layout" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>

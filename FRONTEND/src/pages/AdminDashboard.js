@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Trash2, Plus, CheckCircle, FileText } from 'lucide-react';
+import { Edit, Trash2, Plus, CheckCircle, FileText, XCircle } from 'lucide-react';
 import api from '../api';
 
 const AdminDashboard = () => {
@@ -33,8 +33,20 @@ const AdminDashboard = () => {
         fetchBoardings();
     }, []);
 
+    const handleReject = async (id) => {
+        if (window.confirm('Reject and Remove this listing?')) {
+            try {
+                await api.delete(`/boardings/delete/${id}`);
+                fetchBoardings();
+            } catch (err) {
+                console.error('Error rejecting boarding:', err);
+                alert('Failed to reject');
+            }
+        }
+    };
+
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this listing?')) {
+        if (window.confirm('Are you sure you want to permanently delete this listing?')) {
             try {
                 await api.delete(`/boardings/delete/${id}`);
                 fetchBoardings(); // Refresh list
@@ -65,8 +77,8 @@ const AdminDashboard = () => {
                     <thead>
                         <tr>
                             <th>Title</th>
-                            <th>Paid Deposit</th>
-                            <th>Evidence (Slip)</th>
+                            <th>Owner ID</th>
+                            <th>Documents</th>
                             <th>Approval Status</th>
                             <th>Actions</th>
                         </tr>
@@ -79,13 +91,20 @@ const AdminDashboard = () => {
                                         <strong>{boarding.title}</strong>
                                         <div className="text-muted small">{boarding.ownerName} ({boarding.contactNumber})</div>
                                     </td>
-                                    <td>LKR {boarding.depositAmount?.toLocaleString()}</td>
+                                    <td><code>{boarding.ownerId || 'N/A'}</code></td>
                                     <td>
-                                        {boarding.depositSlip ? (
-                                            <a href={getFullImageUrl(boarding.depositSlip)} target="_blank" rel="noopener noreferrer" className="slip-link">
-                                                <FileText size={16} /> View Slip
-                                            </a>
-                                        ) : 'N/A'}
+                                        <div className="doc-links">
+                                            {boarding.depositSlip && (
+                                                <a href={getFullImageUrl(boarding.depositSlip)} target="_blank" rel="noopener noreferrer" className="slip-link" title="Deposit Slip">
+                                                    <FileText size={14} /> Slip
+                                                </a>
+                                            )}
+                                            {boarding.nicPhoto && (
+                                                <a href={getFullImageUrl(boarding.nicPhoto)} target="_blank" rel="noopener noreferrer" className="slip-link nic" title="NIC ID">
+                                                    <FileText size={14} /> NIC
+                                                </a>
+                                            )}
+                                        </div>
                                     </td>
                                     <td>
                                         <span className={`status-badge ${boarding.isApproved ? 'available' : 'occupied'}`}>
@@ -94,9 +113,14 @@ const AdminDashboard = () => {
                                     </td>
                                     <td className="actions">
                                         {!boarding.isApproved && (
-                                            <button onClick={() => handleApprove(boarding._id)} className="btn-icon approve-btn" title="Approve Listing">
-                                                <CheckCircle size={18} />
-                                            </button>
+                                            <>
+                                                <button onClick={() => handleApprove(boarding._id)} className="btn-icon approve-btn" title="Approve Listing">
+                                                    <CheckCircle size={18} />
+                                                </button>
+                                                <button onClick={() => handleReject(boarding._id)} className="btn-icon reject-btn" title="Reject Listing">
+                                                    <XCircle size={18} />
+                                                </button>
+                                            </>
                                         )}
                                         <Link to={`/edit/${boarding._id}`} className="btn-icon edit">
                                             <Edit size={16} />

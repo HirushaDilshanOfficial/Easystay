@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const sendEmail = require('../utils/emailService');
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -48,6 +49,74 @@ exports.updateUserStatus = async (req, res, next) => {
                 success: false,
                 error: 'User not found'
             });
+        }
+
+        // Send email notification if user is a BoardingOwner
+        try {
+            if (status === 'Active' && user.role === 'BoardingOwner') {
+                const html = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+                        <div style="background-color: #2563eb; padding: 24px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;">EasyStay</h1>
+                        </div>
+                        <div style="padding: 32px 24px;">
+                            <h2 style="color: #1f2937; margin-top: 0; font-size: 22px;">Application Approved! 🎉</h2>
+                            <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">Dear ${user.name},</p>
+                            <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">Congratulations! Your application to become a Boarding Owner on EasyStay has been reviewed and <strong>approved</strong>.</p>
+                            <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">You can now log in to your account and start managing your boarding profile, listing properties, and connecting with students.</p>
+                            
+                            <div style="text-align: center; margin: 36px 0;">
+                                <a href="http://localhost:3000/login" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">Login to Dashboard</a>
+                            </div>
+                            
+                            <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">Welcome to the EasyStay family! If you have any questions, feel free to reply to this email.</p>
+                            
+                            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin: 0;">Best regards,<br><strong>The EasyStay Team</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                await sendEmail({
+                    email: user.email,
+                    subject: 'Your EasyStay Boarding Owner Account is Approved!',
+                    html
+                });
+                console.log(`Approval email sent successfully to ${user.email}`);
+            } else if (status === 'Rejected' && user.role === 'BoardingOwner') {
+                const html = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; background-color: #ffffff;">
+                        <div style="background-color: #ef4444; padding: 24px; text-align: center;">
+                            <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: bold; letter-spacing: 1px;">EasyStay</h1>
+                        </div>
+                        <div style="padding: 32px 24px;">
+                            <h2 style="color: #1f2937; margin-top: 0; font-size: 22px;">Application Update</h2>
+                            <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">Dear ${user.name},</p>
+                            <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">We have carefully reviewed your application to become a Boarding Owner on EasyStay. Unfortunately, we are unable to approve your application at this time.</p>
+                            
+                            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 24px 0; border-radius: 0 6px 6px 0;">
+                                <p style="color: #991b1b; margin: 0; font-weight: bold; font-size: 15px;">Reason for Rejection:</p>
+                                <p style="color: #7f1d1d; margin: 8px 0 0 0; font-size: 15px;">${rejectionReason || 'No specific reason provided. Please ensure all submitted documents meet our requirements and are clearly visible.'}</p>
+                            </div>
+                            
+                            <p style="color: #4b5563; line-height: 1.6; font-size: 16px;">If you believe this is a mistake, or if you would like to provide updated documentation to appeal this decision, please contact our support team.</p>
+                            
+                            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                                <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin: 0;">Best regards,<br><strong>The EasyStay Admin Team</strong></p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                await sendEmail({
+                    email: user.email,
+                    subject: 'Update Regarding Your EasyStay Application',
+                    html
+                });
+                console.log(`Rejection email sent successfully to ${user.email}`);
+            }
+        } catch (emailError) {
+            console.error('Email sending failed during user status update:', emailError);
+            // Non-blocking: We catch the error so the status update response still succeeds
         }
 
         res.status(200).json({

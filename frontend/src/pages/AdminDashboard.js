@@ -762,6 +762,7 @@ const AdminDashboard = () => {
     const [userToDelete, setUserToDelete] = useState(null);
     const [userToApprove, setUserToApprove] = useState(null);
     const [userToReject, setUserToReject] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -770,6 +771,8 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         loadAdminData();
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
     }, []);
 
     useEffect(() => {
@@ -966,7 +969,7 @@ const AdminDashboard = () => {
                     {/* Logo */}
                     <div className="flex items-center gap-3 px-5 py-5 shrink-0">
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-                            style={{ background: 'linear-gradient(135deg, #4f46e5, #ec4899)' }}>
+                            style={{ background: 'linear-gradient(135deg, #2563eb, #60a5fa)' }}>
                             <HomeIcon style={{ color: '#fff', fontSize: 18 }} />
                         </div>
                         <AnimatePresence>
@@ -975,7 +978,7 @@ const AdminDashboard = () => {
                                     initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}
                                     className="font-black text-lg"
-                                    style={{ background: 'linear-gradient(90deg, #4f46e5, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+                                    style={{ background: 'linear-gradient(90deg, #2563eb, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
                                 >EasyStay</motion.span>
                             )}
                         </AnimatePresence>
@@ -994,19 +997,19 @@ const AdminDashboard = () => {
                                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left relative"
                                     style={{
                                         background: isActive
-                                            ? (darkMode ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.15))' : 'linear-gradient(135deg, #ebf4ff, #e0e7ff)')
+                                            ? (darkMode ? 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(96,165,250,0.15))' : 'linear-gradient(135deg, #eff6ff, #dbeafe)')
                                             : 'transparent',
                                         border: isActive
-                                            ? (darkMode ? '1px solid rgba(99,102,241,0.3)' : '1px solid #c7d2fe')
+                                            ? (darkMode ? '1px solid rgba(37,99,235,0.3)' : '1px solid #bfdbfe')
                                             : '1px solid transparent',
-                                        color: isActive ? (darkMode ? '#818cf8' : '#4338ca') : textSecondary,
+                                        color: isActive ? (darkMode ? '#60a5fa' : '#2563eb') : textSecondary,
                                         minWidth: 0,
                                     }}
                                 >
                                     {isActive && (
                                         <motion.div layoutId="activeStrip"
                                             className="absolute left-0 top-2 bottom-2 w-1 rounded-full shadow-md"
-                                            style={{ background: 'linear-gradient(180deg,#4f46e5,#ec4899)' }}
+                                            style={{ background: 'linear-gradient(180deg,#2563eb,#60a5fa)' }}
                                         />
                                     )}
                                     <Icon fontSize="small" className="shrink-0" />
@@ -1113,22 +1116,36 @@ const AdminDashboard = () => {
                     {activeNav === 'dashboard' && (
                         <motion.div key="dashboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
 
-                            {/* Welcome */}
-                            <div>
-                                <h1 className="text-2xl font-black" style={{ color: textPrimary }}>
-                                    Welcome back, <span style={{ background: darkMode ? 'linear-gradient(90deg, #818cf8, #c084fc)' : 'linear-gradient(90deg, #4338ca, #c026d3)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{adminName}</span> 👋
-                                </h1>
-                                <p className="text-sm mt-1" style={{ color: textSecondary }}>Here's what's happening in your system today.</p>
+                            {/* Welcome Banner */}
+                            <div className="relative overflow-hidden rounded-3xl p-8 shadow-lg border" style={{ borderColor: cardBorder, background: darkMode ? 'linear-gradient(135deg, #0f172a, #1e3a8a)' : 'linear-gradient(135deg, #2563eb, #3b82f6)' }}>
+                                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-10 rounded-full blur-3xl"></div>
+                                <div className="absolute bottom-0 left-20 w-32 h-32 bg-blue-300 opacity-20 rounded-full blur-2xl"></div>
+                                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 text-white">
+                                    <div>
+                                        <h1 className="text-3xl font-black mb-2 tracking-tight">
+                                            Welcome back, <span className="text-blue-100">{adminName}</span> 👋
+                                        </h1>
+                                        <p className="text-blue-50 text-sm font-medium max-w-lg leading-relaxed">System overview and analytics at a glance. You have pending approvals requiring your attention today.</p>
+                                    </div>
+                                    <div className="flex flex-col items-start md:items-end bg-white/10 px-6 py-4 rounded-2xl backdrop-blur-sm border border-white/20">
+                                        <p className="text-3xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">
+                                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                        <p className="text-sm font-bold text-blue-100 mt-1 uppercase tracking-widest">
+                                            {currentTime.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* STAT CARDS */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                                 <StatCard label="Total Users" value={stats?.totalUsers} icon={PeopleIcon}
-                                    accent="linear-gradient(135deg,#6366f1,#818cf8)" delay={0} darkMode={darkMode} />
+                                    accent="linear-gradient(135deg,#2563eb,#60a5fa)" delay={0} darkMode={darkMode} />
                                 <StatCard label="Pending Approvals" value={stats?.pendingOwners} icon={TimeIcon}
                                     accent="linear-gradient(135deg,#f59e0b,#fbbf24)" delay={0.08} darkMode={darkMode} />
                                 <StatCard label="Active Owners" value={stats?.activeOwners} icon={HomeIcon}
-                                    accent="linear-gradient(135deg,#06b6d4,#22d3ee)" delay={0.16} darkMode={darkMode} />
+                                    accent="linear-gradient(135deg,#0ea5e9,#38bdf8)" delay={0.16} darkMode={darkMode} />
                                 <StatCard label="Students" value={stats?.totalStudents} icon={PersonIcon}
                                     accent="linear-gradient(135deg,#10b981,#34d399)" delay={0.24} darkMode={darkMode} />
                             </div>
@@ -1149,15 +1166,15 @@ const AdminDashboard = () => {
                                     </div>
 
                                     <div className="flex items-center gap-4">
-                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-indigo-500/5 border border-indigo-500/10">
-                                            <p className="text-[10px] font-black text-indigo-500 tracking-tighter flex items-center gap-1">
+                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-blue-500/5 border border-blue-500/10 hover:bg-blue-500/10 transition-colors">
+                                            <p className="text-[10px] font-black text-blue-600 tracking-tighter flex items-center gap-1">
                                                 <TrendIcon sx={{ fontSize: 12 }} /> +12.5%
                                             </p>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Growth</p>
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase">Growth</p>
                                         </div>
-                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-pink-500/5 border border-pink-500/10">
-                                            <p className="text-[11px] font-black text-pink-500">Feb</p>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Current</p>
+                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 transition-colors">
+                                            <p className="text-[11px] font-black text-indigo-500">Feb</p>
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase">Current</p>
                                         </div>
                                         <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
                                             <p className="text-[11px] font-black text-emerald-500">7 users</p>
@@ -1194,7 +1211,7 @@ const AdminDashboard = () => {
                                                 {(stats?.growthData?.length > 0 ? stats.growthData : DUMMY_CHART_DATA).map((entry, index) => (
                                                     <Cell
                                                         key={`cell-${index}`}
-                                                        fill={entry.name === 'Feb' ? '#6366f1' : (darkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9')}
+                                                        fill={entry.name === 'Feb' ? '#2563eb' : (darkMode ? 'rgba(255,255,255,0.05)' : '#e2e8f0')}
                                                     />
                                                 ))}
                                             </Bar>
@@ -1209,8 +1226,8 @@ const AdminDashboard = () => {
                                     className="lg:col-span-2 rounded-2xl overflow-hidden"
                                     style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
                                     <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: cardBorder }}>
-                                        <h2 className="text-sm font-bold" style={{ color: textPrimary }}>Recent Activity</h2>
-                                        <button className="text-[10px] font-black uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors">View All</button>
+                                        <h2 className="text-base font-black px-2 py-1 rounded-md bg-white border border-gray-100 shadow-sm" style={{ color: textPrimary }}>Recent Activity</h2>
+                                        <button className="text-[10px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-500 transition-colors bg-blue-50 px-3 py-1.5 rounded-lg">View All</button>
                                     </div>
                                     <div className="divide-y divide-white/5">
                                         {stats?.recentActivity?.length > 0 ? (
@@ -1231,17 +1248,17 @@ const AdminDashboard = () => {
                                 </motion.div>
 
                                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48, duration: 0.4 }}
-                                    className="rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4"
-                                    style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(6,182,212,0.1))', border: `1px solid ${cardBorder}` }}>
-                                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2" style={{ background: 'rgba(99,102,241,0.2)' }}>
-                                        <DocIcon sx={{ fontSize: 32, color: '#818cf8' }} />
+                                    className="rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4 shadow-sm"
+                                    style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.05), rgba(96,165,250,0.1))', border: `1px solid ${cardBorder}` }}>
+                                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2 shadow-inner" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                                        <DocIcon sx={{ fontSize: 32, color: '#2563eb' }} />
                                     </div>
-                                    <h3 className="text-sm font-bold" style={{ color: textPrimary }}>Quick Reports</h3>
-                                    <p className="text-[11px]" style={{ color: textSecondary }}>Download your monthly system audit and user logs in PDF format.</p>
+                                    <h3 className="text-base font-black" style={{ color: textPrimary }}>Quick Reports</h3>
+                                    <p className="text-xs font-medium" style={{ color: textSecondary }}>Download your monthly system audit and user logs in PDF format.</p>
                                     <motion.button
                                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                         onClick={handleExportPDF}
-                                        className="mt-2 px-6 py-2.5 rounded-xl text-xs font-black bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">
+                                        className="mt-2 px-8 py-3 rounded-xl text-xs font-black bg-blue-600 hover:bg-blue-700 transition-colors text-white shadow-lg shadow-blue-500/30">
                                         Generate Audit
                                     </motion.button>
                                 </motion.div>

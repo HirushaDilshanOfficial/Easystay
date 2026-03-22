@@ -39,7 +39,7 @@ const FEATURES = [
 ];
 
 export default function Home() {
-    const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', phoneNumber: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -51,7 +51,7 @@ export default function Home() {
         try {
             await contactService.submitContactForm(formData);
             setSubmitStatus({ type: 'success', message: "Thanks! We'll get back to you very soon." });
-            setFormData({ name: '', email: '', message: '' });
+            setFormData({ name: '', email: '', phoneNumber: '', message: '' });
         } catch {
             setSubmitStatus({ type: 'error', message: 'Failed to send. Please try again.' });
         } finally {
@@ -287,8 +287,19 @@ export default function Home() {
                                     </motion.div>
                                 )}
                                 <div className="grid sm:grid-cols-2 gap-4">
-                                    <FormField label="Name" type="text" value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="Alex Johnson" />
-                                    <FormField label="Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="alex@my.sliit.lk" />
+                                    <FormField label="Name" type="text" value={formData.name} onChange={v => {
+                                        if (/^[a-zA-Z\s]*$/.test(v)) {
+                                            setFormData({ ...formData, name: v });
+                                        }
+                                    }} placeholder="Alex Johnson" />
+                                    <FormField label="Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="kasun@gmail.com" />
+                                </div>
+                                <div>
+                                    <FormField label="Phone Number" type="tel" value={formData.phoneNumber || ''} onChange={v => {
+                                        if (/^\d{0,10}$/.test(v)) {
+                                            setFormData({ ...formData, phoneNumber: v });
+                                        }
+                                    }} placeholder="077 123 4567" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Message</label>

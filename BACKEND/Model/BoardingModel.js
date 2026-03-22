@@ -68,6 +68,25 @@ const boardingSchema = new mongoose.Schema(
             type: String,
             trim: true,
         },
+        // --- Payment & Admin Fields ---
+        depositAmount: {
+            type: Number,
+            required: true,
+            default: 0,
+        },
+        bankName: {
+            type: String,
+        },
+        accountNumber: {
+            type: String,
+        },
+        depositSlip: {
+            type: String, // Filename in uploads folder
+        },
+        isApproved: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

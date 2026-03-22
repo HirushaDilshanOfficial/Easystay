@@ -437,13 +437,57 @@
   gap: 2rem;
 }
 
-.main-image {
+.gallery-container {
+  margin-bottom: 2rem;
+}
+
+.main-image-wrapper {
   width: 100%;
-  height: 400px;
-  object-fit: cover;
+  height: 450px;
+  overflow: hidden;
   border-radius: var(--border-radius);
   box-shadow: var(--shadow-md);
-  margin-bottom: 2rem;
+  background-color: #f1f5f9;
+}
+
+.main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Using contain to see full ikman screenshot without cropping */
+  background-color: #f1f5f9;
+}
+
+.thumbnails-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.thumbnail-item {
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: var(--transition);
+  opacity: 0.7;
+}
+
+.thumbnail-item:hover {
+  opacity: 1;
+}
+
+.thumbnail-item.active {
+  border-color: var(--primary-color);
+  opacity: 1;
+  box-shadow: var(--shadow-sm);
+}
+
+.thumbnail-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .section {
@@ -538,4 +582,283 @@
   }
 
   /* Simplified for now */
+}
+
+/* --- Appointment Booking --- */
+.appointment-card {
+  background-color: var(--surface-color);
+  padding: 1.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  margin-top: 1.5rem;
+}
+
+.appointment-card.success {
+  border-color: var(--success);
+  background-color: #f0fdf4;
+}
+
+.appointment-card h3 {
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.slots-container {
+  margin: 1.5rem 0;
+}
+
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.slot-btn {
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.slot-btn:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.slot-btn.selected {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.slot-btn.booked {
+  background-color: #f1f5f9;
+  color: #94a3b8;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.form-group-lite {
+  margin-bottom: 1rem;
+}
+
+.form-group-lite label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.form-group-lite input {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+.user-info-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.user-info-form input {
+  padding: 0.6rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  font-size: 0.9rem;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+}
+
+.back-btn:hover {
+  color: var(--primary-color);
+}
+
+.contact-reveal {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed var(--border-color);
+}
+
+.contact-reveal h4 {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.contact-reveal p {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.text-success {
+  color: var(--success);
+}
+
+/* --- Pro Listing Button --- */
+.form-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.btn-pro-listing {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+}
+
+.btn-pro-listing:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3);
+  filter: brightness(1.1);
+}
+
+/* --- Owner Dashboard --- */
+.owner-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.owner-login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+}
+
+.login-card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-lg);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 0.75rem;
+  margin: 1.5rem 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.appointments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.appointment-detail-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.boarding-info h3 {
+  margin: 0.25rem 0;
+  color: var(--primary-color);
+}
+
+.student-info {
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.student-info h4 {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.appointment-info {
+  display: flex;
+  gap: 1rem;
+}
+
+.time-badge {
+  background: #eff6ff;
+  color: #1e40af;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* --- Admin UI Tweaks --- */
+.approve-btn {
+  color: var(--success) !important;
+}
+
+.approve-btn:hover {
+  background-color: #f0fdf4 !important;
+}
+
+.slip-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--primary-color);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.slip-link:hover {
+  text-decoration: underline;
+}
+
+.section-title {
+  margin-top: 2rem !important;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  color: var(--text-main);
 }

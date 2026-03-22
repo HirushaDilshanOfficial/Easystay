@@ -18,6 +18,9 @@ const AddEditBoardingPage = () => {
         availability: true,
         contactNumber: '',
         ownerName: '',
+        bankName: '',
+        accountNumber: '',
+        depositAmount: '',
     });
 
     const [facilities, setFacilities] = useState([]);
@@ -44,6 +47,9 @@ const AddEditBoardingPage = () => {
                         availability: p.availability,
                         contactNumber: p.contactNumber || '',
                         ownerName: p.ownerName || '',
+                        bankName: p.bankName || '',
+                        accountNumber: p.accountNumber || '',
+                        depositAmount: p.depositAmount || '',
                     });
                     setFacilities(p.facilities || []);
                 } catch (err) {
@@ -118,7 +124,16 @@ const AddEditBoardingPage = () => {
     return (
         <div className="form-page">
             <div className="form-container">
-                <h1>{isAddMode ? 'Add New Boarding' : 'Edit Boarding'}</h1>
+                <div className="form-header-flex">
+                    <h1>{isAddMode ? 'Add New Boarding' : 'Edit Boarding'}</h1>
+                    <button 
+                        type="button" 
+                        className="btn-pro-listing"
+                        onClick={() => alert('Pro Listing Packages function coming soon!')}
+                    >
+                        Pro Listing Packages Click Here
+                    </button>
+                </div>
                 {error && <div className="error-message">{error}</div>}
 
                 <form onSubmit={handleSubmit} encType="multipart/form-data">
@@ -194,10 +209,30 @@ const AddEditBoardingPage = () => {
                             </label>
                         </div>
 
+                        <div className="form-group full-width section-title">
+                            <h3>Payment Details (For Deposit)</h3>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Bank Name *</label>
+                            <input type="text" name="bankName" value={formData.bankName} onChange={handleChange} required={isAddMode} placeholder="e.g. Bank of Ceylon" />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Account Number *</label>
+                            <input type="text" name="accountNumber" value={formData.accountNumber} onChange={handleChange} required={isAddMode} />
+                        </div>
+
+                        <div className="form-group">
+                            <label>Deposit Amount to Pay (LKR) *</label>
+                            <input type="number" name="depositAmount" value={formData.depositAmount} onChange={handleChange} required={isAddMode} min="0" />
+                        </div>
+
                         <div className="form-group full-width">
-                            <label>Upload Images/Videos (Max 10)</label>
-                            <input type="file" multiple name="media" onChange={handleFileChange} />
-                            {!isAddMode && <small className="text-muted">Note: Uploading new files will replace existing ones (if handled by backend).</small>}
+                            <label>Upload Deposit Slip & Property Images/Videos (First file MUST be the Deposit Slip) *</label>
+                            <input type="file" multiple name="media" onChange={handleFileChange} required={isAddMode} />
+                            <small className="text-info" style={{ display: 'block', marginBottom: '10px' }}>Important: The very first file you select will be used as the proof of payment.</small>
+                            {!isAddMode && <small className="text-muted block">Note: Uploading new files will replace existing ones.</small>}
                         </div>
                     </div>
 

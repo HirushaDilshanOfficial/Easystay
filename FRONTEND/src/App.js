@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import AdminDashboard from './pages/AdminDashboard';
 import AddEditBoardingPage from './pages/AddEditBoardingPage';
 import BoardingDetailsPage from './pages/BoardingDetailsPage';
+import OwnerDashboard from './pages/OwnerDashboard';
 import './App.css';
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/owner" element={<OwnerDashboard />} />
             <Route path="/add" element={<AddEditBoardingPage />} />
             <Route path="/edit/:id" element={<AddEditBoardingPage />} />
             <Route path="/boarding/:id" element={<BoardingDetailsPage />} />

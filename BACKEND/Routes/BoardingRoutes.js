@@ -7,7 +7,9 @@ const {
     getAllBoardings,
     getBoardingById,
     updateBoarding,
+    approveBoarding,
     deleteBoarding,
+    getOwnerAppointments,
 } = require("../Controller/BoardingController");
 
 // ───────────────────────────────────────
@@ -18,10 +20,12 @@ const {
 // DELETE /api/boardings/delete/:id → Delete boarding by ID
 // ───────────────────────────────────────
 
-router.post("/add", upload.array("media", 10), addBoarding);
+router.post("/add", upload.array("media", 11), addBoarding); // Increased to 11 to allow for the deposit slip
 router.get("/", getAllBoardings);
 router.get("/:id", getBoardingById);
 router.put("/update/:id", upload.array("media", 10), updateBoarding);
+router.put("/approve/:id", approveBoarding);
+router.get("/owner/appointments/:ownerName", getOwnerAppointments);
 router.delete("/delete/:id", deleteBoarding);
 
 module.exports = router;

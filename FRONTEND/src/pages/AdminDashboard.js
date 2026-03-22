@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Edit, Trash2, Plus } from 'lucide-react';
+import { Edit, Trash2, Plus, CheckCircle, FileText } from 'lucide-react';
 import api from '../api';
 
 const AdminDashboard = () => {
@@ -9,12 +9,23 @@ const AdminDashboard = () => {
 
     const fetchBoardings = async () => {
         try {
-            const res = await api.get('/boardings');
+            const res = await api.get('/boardings?adminView=true');
             setBoardings(res.data.data || []);
         } catch (err) {
             console.error('Error fetching boardings:', err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleApprove = async (id) => {
+        try {
+            await api.put(`/boardings/approve/${id}`);
+            alert('Boarding Approved Successfully!');
+            fetchBoardings();
+        } catch (err) {
+            console.error('Error approving boarding:', err);
+            alert('Failed to approve');
         }
     };
 
@@ -34,6 +45,10 @@ const AdminDashboard = () => {
         }
     };
 
+    const getFullImageUrl = (img) => {
+        return img.startsWith('http') ? img : `http://localhost:5001/uploads/${img}`;
+    };
+
     if (loading) return <div className="loading">Loading dashboard...</div>;
 
     return (
@@ -50,9 +65,9 @@ const AdminDashboard = () => {
                     <thead>
                         <tr>
                             <th>Title</th>
-                            <th>Price/Mo</th>
-                            <th>Type</th>
-                            <th>Status</th>
+                            <th>Paid Deposit</th>
+                            <th>Evidence (Slip)</th>
+                            <th>Approval Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -60,15 +75,29 @@ const AdminDashboard = () => {
                         {boardings.length > 0 ? (
                             boardings.map((boarding) => (
                                 <tr key={boarding._id}>
-                                    <td>{boarding.title}</td>
-                                    <td>Rs. {boarding.pricePerMonth}</td>
-                                    <td>{boarding.roomType}</td>
                                     <td>
-                                        <span className={`status-badge ${boarding.availability ? 'available' : 'occupied'}`}>
-                                            {boarding.availability ? 'Available' : 'Occupied'}
+                                        <strong>{boarding.title}</strong>
+                                        <div className="text-muted small">{boarding.ownerName} ({boarding.contactNumber})</div>
+                                    </td>
+                                    <td>LKR {boarding.depositAmount?.toLocaleString()}</td>
+                                    <td>
+                                        {boarding.depositSlip ? (
+                                            <a href={getFullImageUrl(boarding.depositSlip)} target="_blank" rel="noopener noreferrer" className="slip-link">
+                                                <FileText size={16} /> View Slip
+                                            </a>
+                                        ) : 'N/A'}
+                                    </td>
+                                    <td>
+                                        <span className={`status-badge ${boarding.isApproved ? 'available' : 'occupied'}`}>
+                                            {boarding.isApproved ? 'Approved ✅' : 'Pending ⏳'}
                                         </span>
                                     </td>
                                     <td className="actions">
+                                        {!boarding.isApproved && (
+                                            <button onClick={() => handleApprove(boarding._id)} className="btn-icon approve-btn" title="Approve Listing">
+                                                <CheckCircle size={18} />
+                                            </button>
+                                        )}
                                         <Link to={`/edit/${boarding._id}`} className="btn-icon edit">
                                             <Edit size={16} />
                                         </Link>

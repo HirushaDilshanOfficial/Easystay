@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Home, List, PlusSquare } from 'lucide-react';
+import { Home, List, PlusSquare, User } from 'lucide-react';
 
 const Navbar = () => {
     return (
@@ -17,8 +17,13 @@ const Navbar = () => {
                         </Link>
                     </li>
                     <li className="nav-item">
+                        <Link to="/owner" className="nav-links">
+                            <User className="nav-icon" /> Owner
+                        </Link>
+                    </li>
+                    <li className="nav-item">
                         <Link to="/admin" className="nav-links">
-                            <List className="nav-icon" /> Dashboard
+                            <List className="nav-icon" /> Admin
                         </Link>
                     </li>
                     <li className="nav-item">

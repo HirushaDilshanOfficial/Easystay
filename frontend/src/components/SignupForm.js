@@ -91,6 +91,7 @@ const SignupForm = () => {
     const [step, setStep] = useState(1); // 1 = role picker, 2 = form
     const [selectedRole, setSelectedRole] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [emailError, setEmailError] = useState('');
     const [error, setError] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [loading, setLoading] = useState(false);
@@ -128,6 +129,13 @@ const SignupForm = () => {
                 return;
             }
         }
+        if (name === 'email') {
+            if (selectedRole === 'Student' && value && !value.endsWith('@my.sliit.lk')) {
+                setEmailError('Students must use a @my.sliit.lk email');
+            } else {
+                setEmailError('');
+            }
+        }
         setFormData({ ...formData, [name]: value });
     };
 
@@ -143,6 +151,7 @@ const SignupForm = () => {
         setSelectedRole(role);
         setStep(2);
         setError('');
+        setEmailError('');
     };
 
     const handleSubmit = async (e) => {
@@ -157,6 +166,10 @@ const SignupForm = () => {
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
         if (!passwordRegex.test(formData.password)) {
             return setError('Password must be at least 6 characters long, contain 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.');
+        }
+
+        if (selectedRole === 'Student' && !formData.email.endsWith('@my.sliit.lk')) {
+            return setError('Students must use a @my.sliit.lk email.');
         }
 
         setLoading(true);
@@ -402,14 +415,16 @@ const SignupForm = () => {
                     {/* Common Fields */}
                     <TextField
                         fullWidth label="Full Name" name="name" variant="outlined"
-                        value={formData.name} onChange={handleChange} required sx={inputSx}
+                        value={formData.name} onChange={handleChange} required sx={inputSx} placeholder="e.g. John Doe"
                         InputProps={{ startAdornment: <InputAdornment position="start"><PersonIcon sx={{ color: '#6366f1' }} fontSize="small" /></InputAdornment> }}
                     />
                     <TextField
                         fullWidth
-                        label={selectedRole === 'Student' ? 'SLIIT Email (e.g. IT23678734@my.sliit.lk)' : 'Email Address'}
+                        label={selectedRole === 'Student' ? 'SLIIT Email ' : 'Email Address'}
                         name="email" type="email" variant="outlined"
-                        value={formData.email} onChange={handleChange} required sx={inputSx}
+                        value={formData.email} onChange={handleChange} required sx={inputSx} placeholder={selectedRole === 'Student' ? 'e.g. it23655565@my.sliit.lk' : 'e.g. dasun@gmail.com'}
+                        error={Boolean(emailError)}
+                        helperText={emailError}
                         InputProps={{ startAdornment: <InputAdornment position="start"><EmailIcon sx={{ color: '#6366f1' }} fontSize="small" /></InputAdornment> }}
                     />
 
@@ -424,6 +439,7 @@ const SignupForm = () => {
                             />
                             <TextField
                                 fullWidth label="Property Address" name="address" variant="outlined"
+                                placeholder={`New York, NY 10001\nUnited States`}
                                 value={formData.address} onChange={handleChange} required sx={inputSx} multiline rows={2}
                                 InputProps={{ startAdornment: <InputAdornment position="start"><HomeIcon sx={{ color: '#6366f1' }} fontSize="small" /></InputAdornment> }}
                             />
@@ -437,14 +453,15 @@ const SignupForm = () => {
 
                     <TextField
                         fullWidth label="Password" name="password" type={showPassword ? 'text' : 'password'}
-                        variant="outlined" value={formData.password} onChange={handleChange} required sx={inputSx}
+                        variant="outlined" value={formData.password} onChange={handleChange} required sx={inputSx} placeholder="Enter your password"
+                        helperText="Min 6 chars, 1 uppercase, 1 number, 1 special character"
                         InputProps={{
                             startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#6366f1' }} fontSize="small" /></InputAdornment>,
                         }}
                     />
                     <TextField
                         fullWidth label="Confirm Password" name="confirmPassword" type={showPassword ? 'text' : 'password'}
-                        variant="outlined" value={formData.confirmPassword} onChange={handleChange} required sx={inputSx}
+                        variant="outlined" value={formData.confirmPassword} onChange={handleChange} required sx={inputSx} placeholder="Confirm your password"
                         InputProps={{
                             startAdornment: <InputAdornment position="start"><LockIcon sx={{ color: '#6366f1' }} fontSize="small" /></InputAdornment>,
                             endAdornment: <InputAdornment position="end">

@@ -104,7 +104,11 @@ export default function Home() {
                                 <input
                                     type="text"
                                     value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
+                                    onChange={e => {
+                                        if (/^[a-zA-Z0-9 ]*$/.test(e.target.value)) {
+                                            setSearchQuery(e.target.value);
+                                        }
+                                    }}
                                     placeholder="Search area, building..."
                                     className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent font-medium"
                                 />

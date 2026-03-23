@@ -84,6 +84,7 @@ const ForgotPassword = () => {
                             variant="outlined"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            placeholder="e.g. john@example.com"
                             required
                             sx={inputSx}
                             InputProps={{

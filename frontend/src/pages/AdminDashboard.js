@@ -45,9 +45,7 @@ import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import userService from '../services/userService';
 
-// ─────────────────────────────────────────────
-//  Constants
-// ─────────────────────────────────────────────
+
 const NAV_ITEMS = [
     { icon: DashboardIcon, label: 'Dashboard', id: 'dashboard' },
     { icon: PeopleIcon, label: 'Users', id: 'users' },
@@ -62,9 +60,7 @@ const DUMMY_CHART_DATA = [
     { name: 'Jul', users: 18 },
 ];
 
-// ─────────────────────────────────────────────
-//  Counter animation hook
-// ─────────────────────────────────────────────
+
 function useCountUp(target, duration = 1200) {
     const [count, setCount] = useState(0);
     useEffect(() => {
@@ -81,9 +77,7 @@ function useCountUp(target, duration = 1200) {
     return count;
 }
 
-// ─────────────────────────────────────────────
-//  Stat Card
-// ─────────────────────────────────────────────
+
 function StatCard({ label, value, icon: Icon, accent, delay = 0, darkMode }) {
     const count = useCountUp(value);
     return (
@@ -122,9 +116,7 @@ function StatCard({ label, value, icon: Icon, accent, delay = 0, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Loading Skeleton Row
-// ─────────────────────────────────────────────
+
 function SkeletonRow() {
     return (
         <tr>
@@ -137,9 +129,7 @@ function SkeletonRow() {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Custom Chart Tooltip
-// ─────────────────────────────────────────────
+
 function ChartTooltip({ active, payload, label, darkMode }) {
     if (!active || !payload?.length) return null;
     return (
@@ -161,9 +151,7 @@ function ChartTooltip({ active, payload, label, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  User Detail Modal
-// ─────────────────────────────────────────────
+
 function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
     if (!u) return null;
     const modalBg = darkMode ? 'rgba(15,18,26,0.97)' : 'rgba(248,250,252,0.97)';
@@ -235,8 +223,12 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
                     {/* Info */}
                     <div className="px-6 py-2">
                         <InfoRow icon={EmailIcon} label="Email" value={u.email} color="#6366f1" />
-                        <InfoRow icon={PhoneIcon} label="Phone Number" value={u.phoneNumber} color="#06b6d4" />
-                        <InfoRow icon={LocationIcon} label="Address" value={u.address} color="#10b981" />
+                        {u.role === 'BoardingOwner' && (
+                            <>
+                                <InfoRow icon={PhoneIcon} label="Phone Number" value={u.phoneNumber} color="#06b6d4" />
+                                <InfoRow icon={LocationIcon} label="Address" value={u.address} color="#10b981" />
+                            </>
+                        )}
                         <InfoRow icon={PersonIcon} label="Status" value={u.status} color={
                             u.status === 'Active' ? '#34d399' : u.status === 'Pending' ? '#fbbf24' : '#f87171'
                         } />
@@ -306,9 +298,7 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  User Edit Modal
-// ─────────────────────────────────────────────
+
 function UserEditModal({ user: u, onClose, onSave, darkMode }) {
     const [formData, setFormData] = useState({
         name: u?.name || '',
@@ -409,29 +399,33 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
                                 required
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Phone Number</label>
-                            <input
-                                type="text"
-                                value={formData.phoneNumber}
-                                onChange={(e) => {
-                                    if (/^\d{0,10}$/.test(e.target.value)) {
-                                        setFormData({ ...formData, phoneNumber: e.target.value });
-                                    }
-                                }}
-                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
-                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Property Address</label>
-                            <textarea
-                                value={formData.address}
-                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all min-h-[80px]"
-                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
-                            />
-                        </div>
+                        {u.role === 'BoardingOwner' && (
+                            <>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Phone Number</label>
+                                    <input
+                                        type="text"
+                                        value={formData.phoneNumber}
+                                        onChange={(e) => {
+                                            if (/^\d{0,10}$/.test(e.target.value)) {
+                                                setFormData({ ...formData, phoneNumber: e.target.value });
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                        style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Property Address</label>
+                                    <textarea
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all min-h-[80px]"
+                                        style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                                    />
+                                </div>
+                            </>
+                        )}
 
                         {u.role === 'BoardingOwner' && (
                             <div className="space-y-1.5">
@@ -465,9 +459,9 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
+
 //  Approval Confirmation Modal
-// ─────────────────────────────────────────────
+
 function ApproveConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     if (!u) return null;
     const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
@@ -526,9 +520,7 @@ function ApproveConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Rejection Reason Modal
-// ─────────────────────────────────────────────
+
 function RejectReasonModal({ user: u, onClose, onConfirm, darkMode }) {
     const [reason, setReason] = useState('');
     if (!u) return null;
@@ -604,9 +596,7 @@ function RejectReasonModal({ user: u, onClose, onConfirm, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Recent Activity Item
-// ─────────────────────────────────────────────
+
 function ActivityItem({ activity, cardBorder, textPrimary, textSecondary, darkMode }) {
     const isNew = (new Date() - new Date(activity.createdAt)) < 24 * 60 * 60 * 1000;
 
@@ -664,9 +654,7 @@ function ActivityItem({ activity, cardBorder, textPrimary, textSecondary, darkMo
     );
 }
 
-// ─────────────────────────────────────────────
-//  Delete Confirmation Modal
-// ─────────────────────────────────────────────
+
 function DeleteConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     if (!u) return null;
 
@@ -726,9 +714,7 @@ function DeleteConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Main Component
-// ─────────────────────────────────────────────
+
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const userData = authService.getCurrentUser();

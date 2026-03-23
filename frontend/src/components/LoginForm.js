@@ -74,6 +74,7 @@ const LoginForm = () => {
                     variant="outlined"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. john@example.com"
                     required
                     sx={{
                         '& .MuiOutlinedInput-root': {
@@ -97,6 +98,7 @@ const LoginForm = () => {
                     variant="outlined"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
                     required
                     sx={{
                         '& .MuiOutlinedInput-root': {

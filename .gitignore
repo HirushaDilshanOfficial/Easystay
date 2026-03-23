@@ -33,3 +33,5 @@ Thumbs.db
 # Optional IDE / editor files
 .vscode/
 .idea/
+
+.DS_Store

@@ -11,6 +11,10 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const boardingRoutes = require('./routes/BoardingRoutes');
+const appointmentRoutes = require('./routes/AppointmentRoutes');
+const tenancyRoutes = require('./routes/TenancyRoutes');
+const paymentRoutes = require('./routes/PaymentRoutes');
 
 // Connect to database, then seed admin
 connectDB().then(() => seedAdmin());
@@ -35,10 +39,14 @@ app.get('/', (req, res) => {
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/boardings', boardingRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/tenancy', tenancyRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Error handler
 app.use(errorHandler);

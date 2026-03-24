@@ -20,13 +20,16 @@ const storage = new CloudinaryStorage({
     params: async (req, file) => {
         let folder = 'easystay/others';
 
-        if (file.fieldname === 'nicPhoto') folder = 'easystay/nic';
+        if (file.fieldname === 'nicPhoto' || file.fieldname === 'nic') folder = 'easystay/nic';
         if (file.fieldname === 'facePhoto') folder = 'easystay/faces';
         if (file.fieldname === 'boardingDocuments') folder = 'easystay/documents';
+        if (file.fieldname === 'slip') folder = 'easystay/slips';
+        if (file.fieldname === 'media') folder = 'easystay/properties';
 
         return {
             folder: folder,
-            allowed_formats: ['jpg', 'png', 'jpeg', 'pdf'],
+            allowed_formats: ['jpg', 'png', 'jpeg', 'pdf', 'webp', 'mp4', 'mov'],
+            resource_type: 'auto', // Important for allowing video uploads automatically
             public_id: `${Date.now()}-${file.originalname.split('.')[0].replace(/[^a-zA-Z0-9]/g, '_')}`
         };
     }

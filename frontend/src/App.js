@@ -13,6 +13,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import LoyaltyDemo from './pages/LoyaltyDemo';
 import PaymentDemo from './pages/PaymentDemo';
+import BoardingList from './pages/boardinglist';
+import BoardingDetailsPage from './pages/BoardingDetailsPage';
 
 function App() {
   return (
@@ -37,6 +39,8 @@ function App() {
           />
           <Route path="/loyalty-demo" element={<LoyaltyDemo />} />
           <Route path="/payment-demo" element={<PaymentDemo />} />
+          <Route path="/boardinglist" element={<BoardingList />} />
+          <Route path="/boarding/:id" element={<BoardingDetailsPage />} />
           <Route path="/" element={<Home />} />
         </Routes>
       </Router>

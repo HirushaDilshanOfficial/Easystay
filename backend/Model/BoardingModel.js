@@ -72,6 +72,10 @@ const boardingSchema = new mongoose.Schema(
             type: String, // Unique ID for owner dashboard access
             required: true,
         },
+        ownerEmail: {
+            type: String, // Email to notify owner
+            trim: true,
+        },
         // --- Payment & Admin Fields ---
         depositAmount: {
             type: Number,

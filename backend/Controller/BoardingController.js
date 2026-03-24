@@ -1,5 +1,7 @@
 const Boarding = require("../Model/BoardingModel");
 const Appointment = require("../Model/AppointmentModel");
+const User = require("../models/User");
+const sendEmail = require("../utils/emailService");
 
 // ─────────────────────────────────────────────
 // @desc    Add a new boarding listing
@@ -25,6 +27,7 @@ const addBoarding = async (req, res) => {
             rating,
             contactNumber,
             ownerName,
+            ownerEmail,
             depositAmount,
         } = req.body;
 
@@ -43,25 +46,23 @@ const addBoarding = async (req, res) => {
         if (req.files) {
             // Handle Deposit Slip
             if (req.files['slip'] && req.files['slip'][0]) {
-                depositSlip = req.files['slip'][0].filename;
+                depositSlip = req.files['slip'][0].path;
             }
 
             // Handle NIC Photo
             if (req.files['nic'] && req.files['nic'][0]) {
-                nicPhoto = req.files['nic'][0].filename;
+                nicPhoto = req.files['nic'][0].path;
             }
 
             // Handle Property Media
             if (req.files['media']) {
                 req.files['media'].forEach((file) => {
-                    const ext = file.originalname.split(".").pop().toLowerCase();
-                    const imageExts = ["jpg", "jpeg", "png", "webp"];
-                    const videoExts = ["mp4", "mov", "avi", "mkv"];
-
-                    if (imageExts.includes(ext)) {
-                        images.push(file.filename);
-                    } else if (videoExts.includes(ext)) {
-                        videos.push(file.filename);
+                    // Cloudinary automatically determines format, check mimetype or originalname
+                    const isVideo = file.mimetype?.startsWith('video/') || file.originalname.match(/\.(mp4|mov|avi|mkv)$/i);
+                    if (isVideo) {
+                        videos.push(file.path);
+                    } else {
+                        images.push(file.path);
                     }
                 });
             }
@@ -87,10 +88,11 @@ const addBoarding = async (req, res) => {
             contactNumber,
             ownerName,
             ownerId,
+            ownerEmail,
             depositAmount: 7499, // Fixed plan
             depositSlip,
             nicPhoto,
-            isApproved: false, // All new listings start as unapproved
+            isApproved: false, // Must be approved by admin
         });
 
         const savedBoarding = await newBoarding.save();
@@ -242,19 +244,17 @@ const updateBoarding = async (req, res) => {
             const nicFiles = req.files['nic'] || [];
 
             [...mediaFiles, ...slipFiles, ...nicFiles].forEach((file) => {
-                const ext = file.originalname.split(".").pop().toLowerCase();
-                const imageExts = ["jpg", "jpeg", "png", "webp"];
-                const videoExts = ["mp4", "mov", "avi", "mkv"];
+                const isVideo = file.mimetype?.startsWith('video/') || file.originalname.match(/\.(mp4|mov|avi|mkv)$/i);
 
-                if (imageExts.includes(ext)) {
-                    newImages.push(file.filename);
-                } else if (videoExts.includes(ext)) {
-                    newVideos.push(file.filename);
+                if (isVideo) {
+                    newVideos.push(file.path);
+                } else {
+                    newImages.push(file.path);
                 }
             });
 
-            if (slipFiles.length > 0) req.body.depositSlip = slipFiles[0].filename;
-            if (nicFiles.length > 0) req.body.nicPhoto = nicFiles[0].filename;
+            if (slipFiles.length > 0) req.body.depositSlip = slipFiles[0].path;
+            if (nicFiles.length > 0) req.body.nicPhoto = nicFiles[0].path;
 
             if (newImages.length > 0) req.body.images = [...(boarding.images || []), ...newImages];
             if (newVideos.length > 0) req.body.videos = [...(boarding.videos || []), ...newVideos];
@@ -320,6 +320,8 @@ const deleteBoarding = async (req, res) => {
 // ─────────────────────────────────────────────
 const approveBoarding = async (req, res) => {
     try {
+        const { message } = req.body; // Accept custom message from admin
+        
         const boarding = await Boarding.findByIdAndUpdate(
             req.params.id,
             { isApproved: true },
@@ -331,6 +333,18 @@ const approveBoarding = async (req, res) => {
                 success: false,
                 message: "Boarding listing not found",
             });
+        }
+
+        if (boarding.ownerEmail) {
+            try {
+                await sendEmail({
+                    email: boarding.ownerEmail,
+                    subject: 'Boarding Listing Approved - EasyStay',
+                    message: message || `Hello ${boarding.ownerName},\n\nGood news! Your boarding listing "${boarding.title}" has been approved by the admin and is now live on EasyStay.\n\nThank you for using our platform.`
+                });
+            } catch (emailErr) {
+                console.error("Failed to send approval email:", emailErr);
+            }
         }
 
         res.status(200).json({
@@ -348,6 +362,50 @@ const approveBoarding = async (req, res) => {
 };
 
 // ─────────────────────────────────────────────
+// @desc    Reject a boarding listing
+// @route   PUT /api/boardings/reject/:id
+// @access  Admin
+// ─────────────────────────────────────────────
+const rejectBoarding = async (req, res) => {
+    try {
+        const { reason, message } = req.body; // Accept custom reason/message from admin
+        const boarding = await Boarding.findById(req.params.id);
+
+        if (!boarding) {
+            return res.status(404).json({
+                success: false,
+                message: "Boarding listing not found",
+            });
+        }
+
+        await Boarding.findByIdAndDelete(req.params.id);
+
+        if (boarding.ownerEmail) {
+            try {
+                await sendEmail({
+                    email: boarding.ownerEmail,
+                    subject: 'Boarding Listing Rejected - EasyStay',
+                    message: message || `Hello ${boarding.ownerName},\n\nUnfortunately, your boarding listing "${boarding.title}" has been rejected by the admin.\n\nReason: ${reason || 'Does not meet our guidelines.'}\n\nPlease review our policies and try submitting again.`
+                });
+            } catch (emailErr) {
+                console.error("Failed to send rejection email:", emailErr);
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Boarding rejected and deleted successfully!",
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to reject boarding",
+            error: error.message,
+        });
+    }
+};
+
+// ─────────────────────────────────────────────
 // @desc    Get appointments for an owner's boardings
 // @route   GET /api/boardings/owner/appointments/:ownerId
 // @access  Owner
@@ -357,8 +415,28 @@ const getOwnerAppointments = async (req, res) => {
         const { ownerId } = req.params;
         console.log("Fetching appointments for ownerId:", ownerId);
 
-        // Find all boardings by this ownerId
-        const ownerBoardings = await Boarding.find({ ownerId });
+        // First, try to find the User to get their email (for legacy OWNER-XXXXXX ID support)
+        let ownerEmail = null;
+        try {
+            // ownerId passed from frontend is the User's _id
+            const user = await User.findById(ownerId);
+            if (user) {
+                ownerEmail = user.email;
+                console.log("Found user email for legacy support:", ownerEmail);
+            }
+        } catch (err) {
+            console.log("User not found or invalid ID for email fallback.");
+        }
+
+        // Find all boardings by this ownerId OR ownerEmail (if found)
+        const query = {
+            $or: [{ ownerId }]
+        };
+        if (ownerEmail) {
+            query.$or.push({ ownerEmail });
+        }
+
+        const ownerBoardings = await Boarding.find(query);
         console.log("Found boardings count:", ownerBoardings.length);
         const boardingIds = ownerBoardings.map((b) => b._id);
 
@@ -380,12 +458,50 @@ const getOwnerAppointments = async (req, res) => {
     }
 };
 
+const getOwnerBoardings = async (req, res) => {
+    try {
+        const { ownerId } = req.params;
+        console.log("Fetching boardings for ownerId:", ownerId);
+
+        // First, try to find the User to get their email (for legacy support)
+        let ownerEmail = null;
+        try {
+            const user = await User.findById(ownerId);
+            if (user) {
+                ownerEmail = user.email;
+            }
+        } catch (err) {
+            console.log("User not found for email mapping.");
+        }
+
+        const query = { $or: [{ ownerId }] };
+        if (ownerEmail) {
+            query.$or.push({ ownerEmail });
+        }
+
+        const boardings = await Boarding.find(query).sort({ createdAt: -1 });
+
+        res.status(200).json({
+            success: true,
+            data: boardings,
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to fetch owner boardings",
+            error: error.message,
+        });
+    }
+};
+
 module.exports = {
     addBoarding,
     getAllBoardings,
     getBoardingById,
     updateBoarding,
     approveBoarding,
+    rejectBoarding,
     deleteBoarding,
     getOwnerAppointments,
+    getOwnerBoardings,
 };

@@ -42,7 +42,6 @@ export default function Home() {
     const [formData, setFormData] = useState({ name: '', email: '', phoneNumber: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
 
     const handleContactSubmit = async (e) => {
         e.preventDefault();
@@ -98,27 +97,10 @@ export default function Home() {
                                 Discover a new standard of academic residency. Modern, verified, and strategically located boarding for the ambitious SLIIT community.
                             </motion.p>
 
-                            {/* Search Bar */}
-                            <motion.div variants={fade} className="flex items-center gap-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg px-4 py-3 mb-8 w-full max-w-lg">
-                                <SearchIcon sx={{ color: '#9ca3af', fontSize: 20 }} />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={e => {
-                                        if (/^[a-zA-Z0-9 ]*$/.test(e.target.value)) {
-                                            setSearchQuery(e.target.value);
-                                        }
-                                    }}
-                                    placeholder="Search area, building..."
-                                    className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent font-medium"
-                                />
-                                <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 pr-2 cursor-pointer hover:text-blue-600 transition-colors">
-                                    <ApartmentIcon sx={{ color: '#6b7280', fontSize: 17 }} />
-                                    <span className="text-sm text-gray-500 font-semibold">Ty</span>
-                                    <span className="text-gray-400 text-xs">▾</span>
-                                </div>
-                                <Link to="#" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow shadow-blue-500/20 transition-all whitespace-nowrap ml-1">
-                                    Find Your Home
+                            {/* Hero Action Button */}
+                            <motion.div variants={fade} className="mb-10">
+                                <Link to="/boardinglist" className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-base px-8 py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all hover:-translate-y-1">
+                                    Find Boarding <ArrowIcon sx={{ fontSize: 20, ml: 1 }} />
                                 </Link>
                             </motion.div>
 
@@ -158,7 +140,7 @@ export default function Home() {
                             <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Curated Residences</h2>
                             <p className="text-gray-500 font-medium text-sm">Every property is hand-verified by our wardens for safety and comfort standards.</p>
                         </div>
-                        <Link to="#" className="hidden md:flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">
+                        <Link to="/boardinglist" className="hidden md:flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">
                             View all properties <ArrowIcon fontSize="small" />
                         </Link>
                     </div>

@@ -45,6 +45,18 @@ const paymentSchema = new mongoose.Schema({
     remarks: {
         type: String,
         default: ''
+    },
+    isRewardUsed: {
+        type: Boolean,
+        default: false
+    },
+    pointsUsed: {
+        type: Number,
+        default: 0
+    },
+    discountAmount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

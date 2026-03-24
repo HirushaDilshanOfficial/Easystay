@@ -392,6 +392,21 @@ exports.resetPassword = async (req, res, next) => {
     }
 };
 
+// @desc    Get current logged in user
+// @route   GET /api/auth/me
+// @access  Private
+exports.getMe = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 // Helper: create JWT and send response
 const sendTokenResponse = (user, statusCode, res) => {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
@@ -410,6 +425,7 @@ const sendTokenResponse = (user, statusCode, res) => {
             phoneNumber: user.phoneNumber,
             address: user.address,
             facePhoto: user.facePhoto,
+            loyaltyPoints: user.loyaltyPoints,
             createdAt: user.createdAt
         }
     });

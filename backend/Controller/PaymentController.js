@@ -1,13 +1,15 @@
 const Payment = require('../Model/PaymentModel');
 const Tenancy = require('../Model/TenancyModel');
 const Boarding = require('../Model/BoardingModel');
+const User = require('../models/User');
 
 // @desc    Upload payment slip
 // @route   POST /api/payments/upload
 // @access  Student
 exports.uploadPaymentSlip = async (req, res) => {
     try {
-        const { tenancyId, month, amount } = req.body;
+        const { tenancyId, month, amount, useReward } = req.body;
+        const student = await User.findById(req.user._id);
         
         if (!req.file) {
             return res.status(400).json({ success: false, message: "Please upload a payment slip image" });
@@ -18,6 +20,23 @@ exports.uploadPaymentSlip = async (req, res) => {
             return res.status(404).json({ success: false, message: "Tenancy not found" });
         }
 
+        let discountAmount = 0;
+        let isRewardUsed = false;
+        let ptsToUse = parseInt(req.body.pointsUsed) || 0;
+
+        if (ptsToUse > 0) {
+            if (student.loyaltyPoints >= ptsToUse) {
+                isRewardUsed = true;
+                discountAmount = ptsToUse * 100;
+                
+                // Deduct points immediately on application
+                student.loyaltyPoints -= ptsToUse;
+                await student.save();
+            } else {
+                return res.status(400).json({ success: false, message: `Insufficient loyalty points (${ptsToUse} requested, ${student.loyaltyPoints} available)` });
+            }
+        }
+
         const payment = await Payment.create({
             tenancyId,
             studentId: req.user._id,
@@ -26,7 +45,10 @@ exports.uploadPaymentSlip = async (req, res) => {
             amount,
             month,
             slipImage: req.file.path, // Cloudinary URL
-            status: 'Pending'
+            status: 'Pending',
+            isRewardUsed,
+            pointsUsed: ptsToUse,
+            discountAmount
         });
 
         res.status(201).json({
@@ -97,9 +119,24 @@ exports.updatePaymentStatus = async (req, res) => {
             return res.status(401).json({ success: false, message: "Not authorized to update this record" });
         }
 
+        const previousStatus = payment.status;
         payment.status = status;
         payment.remarks = remarks || payment.remarks;
         await payment.save();
+
+        // If approved and was not approved before, give 1 point to student
+        if (status === 'Approved' && previousStatus !== 'Approved') {
+            await User.findByIdAndUpdate(payment.studentId, {
+                $inc: { loyaltyPoints: 1 }
+            });
+        }
+
+        // If rejected and was not rejected before AND a reward was used, refund the points
+        if (status === 'Rejected' && previousStatus !== 'Rejected' && payment.isRewardUsed) {
+            await User.findByIdAndUpdate(payment.studentId, {
+                $inc: { loyaltyPoints: payment.pointsUsed || 0 }
+            });
+        }
 
         res.status(200).json({
             success: true,

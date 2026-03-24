@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Typography, Button, Paper, Grid, Card, CardContent, Avatar, Box, Chip
+    Typography, Button, Paper, Grid, Card, CardContent, Avatar, Box, Chip,
+    TextField, InputAdornment, MenuItem, Select, FormControl, InputLabel
 } from '@mui/material';
 import {
     Logout as LogoutIcon,
@@ -16,8 +17,12 @@ import {
     CalendarMonth as AppointmentsIcon,
     ReceiptLong as ReceiptIcon,
     CheckCircle as CheckCircleIcon,
-    Cancel as CancelIcon
+    Cancel as CancelIcon,
+    Search as SearchIcon,
+    PictureAsPdf as PdfIcon
 } from '@mui/icons-material';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import notificationService from '../services/notificationService';
@@ -31,7 +36,11 @@ const BoardingOwnerDashboard = () => {
     const { user } = userData || {};
     const [activeTab, setActiveTab] = useState('dashboard');
     const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
+
+    // Payments Search/Filter States
+    const [paymentSearch, setPaymentSearch] = useState('');
+    const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
+    const [paymentPropertyFilter, setPaymentPropertyFilter] = useState('All');
 
     const [boardings, setBoardings] = useState([]);
     const [tenancies, setTenancies] = useState([]);
@@ -57,14 +66,11 @@ const BoardingOwnerDashboard = () => {
     }, [user?.id]);
 
     const loadNotifications = async () => {
-        setLoading(true);
         try {
             const notes = await notificationService.getNotifications();
             setNotifications(notes.data);
         } catch (err) {
             console.error('Failed to load notifications');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -187,6 +193,57 @@ const BoardingOwnerDashboard = () => {
         } catch (err) {
             console.error('Failed to update payment status');
         }
+    };
+
+    const filteredPayments = React.useMemo(() => {
+        return payments.filter(p => {
+            const matchesSearch = 
+                (p.studentId?.name || '').toLowerCase().includes(paymentSearch.toLowerCase()) ||
+                (p.studentId?.email || '').toLowerCase().includes(paymentSearch.toLowerCase()) ||
+                (p.month || '').toLowerCase().includes(paymentSearch.toLowerCase());
+            
+            const matchesStatus = paymentStatusFilter === 'All' || p.status === paymentStatusFilter;
+            const matchesProperty = paymentPropertyFilter === 'All' || p.boardingId?._id === paymentPropertyFilter;
+
+            return matchesSearch && matchesStatus && matchesProperty;
+        });
+    }, [payments, paymentSearch, paymentStatusFilter, paymentPropertyFilter]);
+
+    const exportPaymentsPDF = () => {
+        const doc = jsPDF();
+        
+        // Add header
+        doc.setFontSize(20);
+        doc.text('Payment Report', 14, 22);
+        doc.setFontSize(10);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+        doc.text(`Owner: ${user.name || user.email}`, 14, 35);
+        
+        const tableColumn = ["Student", "Property", "Month", "Amount (LKR)", "Status", "Date"];
+        const tableRows = [];
+
+        filteredPayments.forEach(p => {
+            const paymentData = [
+                p.studentId?.name || p.studentId?.email || 'N/A',
+                p.boardingId?.title || 'N/A',
+                p.month,
+                p.amount.toLocaleString(),
+                p.status,
+                new Date(p.createdAt).toLocaleDateString()
+            ];
+            tableRows.push(paymentData);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillStyle: '#1e40af', textColor: '#ffffff', fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: '#f8fafc' }
+        });
+
+        doc.save(`Payments_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
     const handleLogout = () => {
@@ -670,6 +727,11 @@ const BoardingOwnerDashboard = () => {
                                                                     <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e40af' }}>LKR {p.amount.toLocaleString()}</Typography>
                                                                     <Typography variant="caption" sx={{ bgcolor: '#eef2ff', px: 1, py: 0.2, borderRadius: 1, fontWeight: 700, color: '#4338ca' }}>{p.month}</Typography>
                                                                 </Box>
+                                                                {p.isRewardUsed && (
+                                                                    <Typography variant="caption" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5, color: '#059669', fontStyle: 'italic', fontWeight: 700 }}>
+                                                                        <StarIcon sx={{ fontSize: 14, color: '#f59e0b' }} /> Loyalty Discount (-LKR {p.discountAmount?.toLocaleString() || (p.pointsUsed * 100).toLocaleString()})
+                                                                    </Typography>
+                                                                )}
                                                             </Box>
                                                         </Box>
                                                         <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
@@ -703,7 +765,72 @@ const BoardingOwnerDashboard = () => {
                             )}
 
                             {/* Payment History */}
-                            <Typography variant="h6" sx={{ fontWeight: 800, color: '#1f2937', mb: 2 }}>Payment History</Typography>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, mt: 4 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 800, color: '#1f2937' }}>Payment History</Typography>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<PdfIcon />}
+                                    onClick={exportPaymentsPDF}
+                                    sx={{ borderRadius: 2.5, textTransform: 'none', fontWeight: 700, borderColor: '#e2e8f0', color: '#475569', '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' } }}
+                                >
+                                    Export PDF
+                                </Button>
+                            </Box>
+
+                            <Paper sx={{ p: 2, mb: 3, borderRadius: 4, border: '1px solid #f3f4f6', bgcolor: '#fff' }}>
+                                <Grid container spacing={2} alignItems="center">
+                                    <Grid item xs={12} md={5}>
+                                        <TextField
+                                            fullWidth
+                                            size="small"
+                                            placeholder="Search by student or month..."
+                                            value={paymentSearch}
+                                            onChange={(e) => setPaymentSearch(e.target.value)}
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <SearchIcon sx={{ color: '#9ca3af', fontSize: 20 }} />
+                                                    </InputAdornment>
+                                                ),
+                                                sx: { borderRadius: 3, bgcolor: '#f9fafb' }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={6} md={3}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel sx={{ fontSize: '0.8rem' }}>Status</InputLabel>
+                                            <Select
+                                                value={paymentStatusFilter}
+                                                label="Status"
+                                                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                                                sx={{ borderRadius: 3, bgcolor: '#f9fafb' }}
+                                            >
+                                                <MenuItem value="All">All Statuses</MenuItem>
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="Approved">Approved</MenuItem>
+                                                <MenuItem value="Rejected">Rejected</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid item xs={6} md={4}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel sx={{ fontSize: '0.8rem' }}>Property</InputLabel>
+                                            <Select
+                                                value={paymentPropertyFilter}
+                                                label="Property"
+                                                onChange={(e) => setPaymentPropertyFilter(e.target.value)}
+                                                sx={{ borderRadius: 3, bgcolor: '#f9fafb' }}
+                                            >
+                                                <MenuItem value="All">All Properties</MenuItem>
+                                                {boardings.map(b => (
+                                                    <MenuItem key={b._id} value={b._id}>{b.title}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                </Grid>
+                            </Paper>
+
                             <Paper sx={{ borderRadius: 4, border: '1px solid #f3f4f6', overflow: 'hidden' }}>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left">
@@ -713,12 +840,13 @@ const BoardingOwnerDashboard = () => {
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Property</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Month</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Redemption</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                                                 <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-gray-50">
-                                            {payments.length > 0 ? payments.map((p) => (
+                                            {filteredPayments.length > 0 ? filteredPayments.map((p) => (
                                                 <tr key={p._id} className="hover:bg-gray-50/50 transition-colors">
                                                     <td className="px-6 py-4">
                                                         <Typography variant="body2" sx={{ fontWeight: 700, color: '#1f2937' }}>{p.studentId?.name || 'Student'}</Typography>
@@ -734,6 +862,17 @@ const BoardingOwnerDashboard = () => {
                                                         <Typography variant="body2" sx={{ fontWeight: 700, color: '#1f2937' }}>LKR {p.amount.toLocaleString()}</Typography>
                                                     </td>
                                                     <td className="px-6 py-4">
+                                                        {p.isRewardUsed ? (
+                                                            <Chip 
+                                                                label={`-${p.pointsUsed} Pts`} 
+                                                                size="small" 
+                                                                sx={{ bgcolor: '#fffbeb', color: '#92400e', fontWeight: 800, border: '1px solid #fef3c7' }} 
+                                                            />
+                                                        ) : (
+                                                            <Typography variant="caption" sx={{ color: '#9ca3af' }}>None</Typography>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
                                                         <Chip 
                                                             label={p.status} 
                                                             size="small" 
@@ -747,7 +886,7 @@ const BoardingOwnerDashboard = () => {
                                                 </tr>
                                             )) : (
                                                 <tr>
-                                                    <td colSpan="6" className="px-6 py-12 text-center text-gray-400">
+                                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400">
                                                         <ReceiptIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
                                                         <Typography variant="body2">No payment records found</Typography>
                                                     </td>

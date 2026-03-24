@@ -39,7 +39,12 @@ import {
     Stars as StarsIcon,
     CloudUpload as UploadIcon,
     Receipt as ReceiptIcon,
-    Schedule as ClockIcon
+    CalendarMonth as CalendarIcon,
+    LocationOn as MapIcon,
+    MeetingRoom as RoomIcon,
+    SupervisedUserCircle as ManagerIcon,
+    History as HistoryIcon,
+    AttachMoney as MoneyIcon
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
@@ -62,11 +67,14 @@ const Dashboard = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [profile, setProfile] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentData, setPaymentData] = useState({
         month: '',
         amount: '',
-        slip: null
+        slip: null,
+        useReward: false,
+        pointsUsed: 0
     });
 
     const isAdmin = user?.role === 'Admin';
@@ -82,16 +90,19 @@ const Dashboard = () => {
     const loadStudentData = async () => {
         setLoading(true);
         try {
-            const [notes, boardingRes, paymentsRes] = await Promise.all([
+            const [notes, boardingRes, paymentsRes, profileRes] = await Promise.all([
                 notificationService.getNotifications(),
                 api.get('/tenancy/my-boarding'),
-                api.get('/payments/my-payments')
+                api.get('/payments/my-payments'),
+                api.get('/auth/me')
             ]);
             setNotifications(notes.data);
             setMyBoarding(boardingRes.data.data);
             setPayments(paymentsRes.data.data);
+            setProfile(profileRes.data.data);
         } catch (err) {
-            console.error('Failed to load student data');
+            console.error('Failed to load student data:', err);
+            setError('Failed to sync dashboard data. Please try refreshing.');
         } finally {
             setLoading(false);
         }
@@ -113,6 +124,8 @@ const Dashboard = () => {
             formData.append('month', paymentData.month);
             formData.append('amount', paymentData.amount);
             formData.append('slipImage', paymentData.slip);
+            formData.append('useReward', paymentData.pointsUsed > 0);
+            formData.append('pointsUsed', paymentData.pointsUsed);
 
             await api.post('/payments/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
@@ -120,7 +133,7 @@ const Dashboard = () => {
 
             setSuccess('Payment slip uploaded successfully!');
             setShowPaymentModal(false);
-            setPaymentData({ month: '', amount: '', slip: null });
+            setPaymentData({ month: '', amount: '', slip: null, useReward: false, pointsUsed: 0 });
             loadStudentData(); // Refresh
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to upload slip');
@@ -144,12 +157,14 @@ const Dashboard = () => {
     const loadAdminData = async () => {
         setLoading(true);
         try {
-            const [statsData, usersData] = await Promise.all([
+            const [statsData, usersData, profileRes] = await Promise.all([
                 userService.getStats(),
-                userService.getUsers()
+                userService.getUsers(),
+                api.get('/auth/me')
             ]);
             setStats(statsData.data);
             setUsers(usersData.data);
+            setProfile(profileRes.data.data);
         } catch (err) {
             setError('Failed to load dashboard data.');
         } finally {
@@ -551,9 +566,17 @@ const Dashboard = () => {
                                                 </Box>
                                                 <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                                                     <Typography variant="h3" sx={{ fontWeight: 800, color: '#1f2937' }}>
-                                                        {user?.loyaltyPoints || 0}
+                                                        {profile?.loyaltyPoints || 0}
                                                     </Typography>
                                                     <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b', fontSize: '0.9rem' }}>PTS</Typography>
+                                                    {profile?.loyaltyPoints >= 12 && (
+                                                        <Chip 
+                                                            label="Discount Ready!" 
+                                                            size="small" 
+                                                            color="success" 
+                                                            sx={{ ml: 1, fontWeight: 800, fontSize: '0.6rem', height: 20 }} 
+                                                        />
+                                                    )}
                                                 </Box>
                                                 <Typography variant="body2" sx={{ color: '#9ca3af', mt: 1 }}>Available Balance</Typography>
                                             </CardContent>
@@ -642,114 +665,241 @@ const Dashboard = () => {
 
                             {activeTab === 'myboarding' && (
                                 <Box>
-                                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#1f2937', mb: 1 }}>My Boarding</Typography>
-                                    <Typography variant="body2" sx={{ color: '#9ca3af', mb: 4 }}>Details of your currently assigned boarding place</Typography>
-                                    
+                                    {/* ── My Boarding Modern Redesign ── */}
                                     {!myBoarding ? (
-                                        <Paper sx={{ borderRadius: 4, border: '1px solid #f3f4f6', p: 6, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                            <Box sx={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, #eef2ff, #faf5ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-                                                <ApartmentIcon sx={{ fontSize: 48, color: '#a5b4fc' }} />
+                                        <Paper sx={{ 
+                                            borderRadius: 6, 
+                                            border: '1px solid #e2e8f0', 
+                                            p: 8, 
+                                            textAlign: 'center', 
+                                            display: 'flex', 
+                                            flexDirection: 'column', 
+                                            alignItems: 'center',
+                                            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                                            boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                                        }}>
+                                            <Box sx={{ 
+                                                width: 120, height: 120, borderRadius: '40%', 
+                                                background: 'linear-gradient(135deg, #e0e7ff, #ede9fe)', 
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                                mb: 4, transform: 'rotate(-5deg)',
+                                                boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
+                                            }}>
+                                                <ApartmentIcon sx={{ fontSize: 60, color: '#6366f1' }} />
                                             </Box>
-                                            <Typography variant="h5" sx={{ fontWeight: 700, color: '#1f2937', mb: 1 }}>No Active Boarding</Typography>
-                                            <Typography variant="body1" sx={{ color: '#9ca3af', maxWidth: 420, mb: 4 }}>
-                                                You haven't been assigned to any boarding yet. Once your owner registers your stay, the details will appear here.
+                                            <Typography variant="h4" sx={{ fontWeight: 900, color: '#1e293b', mb: 1.5, fontFamily: "'Inter', sans-serif" }}>No Active Boarding</Typography>
+                                            <Typography variant="body1" sx={{ color: '#64748b', maxWidth: 480, mb: 5, lineHeight: 1.6 }}>
+                                                It looks like you haven't been assigned to a property yet. Reach out to your boarding owner to get registered, or browse for new places!
                                             </Typography>
-                                            <Button variant="contained" startIcon={<SearchIcon />} onClick={() => navigate('/')} sx={{ bgcolor: '#4f46e5', fontWeight: 700, borderRadius: 3, px: 5, py: 1.5, textTransform: 'none', boxShadow: '0 4px 14px rgba(79,70,229,0.4)', '&:hover': { bgcolor: '#4338ca' } }}>
-                                                Find a Place
+                                            <Button 
+                                                variant="contained" 
+                                                startIcon={<SearchIcon />} 
+                                                onClick={() => navigate('/')} 
+                                                sx={{ 
+                                                    bgcolor: '#4f46e5', fontWeight: 800, borderRadius: 4, px: 6, py: 2, 
+                                                    textTransform: 'none', fontSize: '1rem',
+                                                    boxShadow: '0 10px 15px -3px rgba(79,70,229,0.4)',
+                                                    '&:hover': { bgcolor: '#4338ca', transform: 'translateY(-2px)' },
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                Explore Accommodations
                                             </Button>
                                         </Paper>
                                     ) : (
                                         <Grid container spacing={4}>
-                                            <Grid item xs={12} md={5}>
-                                                <Card sx={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #f3f4f6', mb: 4 }}>
-                                                    <Box sx={{ height: 300, position: 'relative' }}>
+                                            {/* Left Column: Hero & Stats */}
+                                            <Grid item xs={12} md={7}>
+                                                {/* Hero Header Card */}
+                                                <Card sx={{ 
+                                                    borderRadius: 6, overflow: 'hidden', border: 'none', 
+                                                    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', 
+                                                    position: 'relative', mb: 4 
+                                                }}>
+                                                    <Box sx={{ height: 400, position: 'relative' }}>
                                                         <img 
-                                                            src={myBoarding.boardingId.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80'} 
-                                                            alt={myBoarding.boardingId.title}
+                                                            src={myBoarding?.boardingId?.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80'} 
+                                                            alt={myBoarding?.boardingId?.title}
                                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                         />
-                                                        <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
-                                                            <Chip label="Current Residence" color="success" sx={{ fontWeight: 700, borderRadius: 2 }} />
+                                                        {/* Glassmorphic Overlay */}
+                                                        <Box sx={{ 
+                                                            position: 'absolute', bottom: 0, left: 0, right: 0, 
+                                                            p: 4, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 60%, transparent 100%)',
+                                                            backdropFilter: 'blur(4px)'
+                                                        }}>
+                                                            <Chip 
+                                                                label="Current Stay" 
+                                                                size="small"
+                                                                sx={{ mb: 1.5, bgcolor: '#10b981', color: '#fff', fontWeight: 800, borderRadius: 1.5, fontSize: '0.7rem' }} 
+                                                            />
+                                                            <Typography variant="h3" sx={{ fontWeight: 900, color: '#fff', mb: 1, fontFamily: "'Outfit', sans-serif" }}>
+                                                                {myBoarding?.boardingId?.title}
+                                                            </Typography>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: 'rgba(255,255,255,0.8)' }}>
+                                                                <MapIcon sx={{ fontSize: 18 }} />
+                                                                <Typography variant="body2" sx={{ fontWeight: 500 }}>{myBoarding?.boardingId?.address}</Typography>
+                                                            </Box>
                                                         </Box>
                                                     </Box>
-                                                    <CardContent sx={{ p: 4 }}>
-                                                        <Typography variant="h5" sx={{ fontWeight: 800, color: '#1f2937', mb: 1 }}>{myBoarding.boardingId.title}</Typography>
-                                                        <Typography variant="body2" sx={{ color: '#6b7280', mb: 3 }}>{myBoarding.boardingId.address}</Typography>
-                                                        
-                                                        <Grid container spacing={2}>
-                                                            <Grid item xs={6}>
-                                                                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>PRICE</Typography>
-                                                                <Typography sx={{ fontWeight: 700, color: '#4f46e5' }}>LKR {myBoarding.boardingId.pricePerMonth.toLocaleString()}/mo</Typography>
-                                                            </Grid>
-                                                            <Grid item xs={6}>
-                                                                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: 1 }}>TYPE</Typography>
-                                                                <Typography sx={{ fontWeight: 700, color: '#374151' }}>{myBoarding.boardingId.roomType}</Typography>
-                                                            </Grid>
-                                                        </Grid>
-                                                    </CardContent>
                                                 </Card>
 
-                                                <Paper sx={{ borderRadius: 4, border: '2px dashed #eef2ff', p: 4, bgcolor: '#fcfdff', textAlign: 'center' }}>
-                                                    <Typography sx={{ fontSize: '0.75rem', fontWeight: 800, color: '#4f46e5', textTransform: 'uppercase', letterSpacing: 1, mb: 1 }}>Payment Tracker</Typography>
-                                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1f2937', mb: 0.5 }}>Next Payment Due</Typography>
-                                                    <Typography variant="h4" sx={{ fontWeight: 800, color: '#4f46e5', mb: 2 }}>{getNextPaymentDate(myBoarding.startDate)}</Typography>
-                                                    <Button 
-                                                        variant="contained" 
-                                                        fullWidth 
-                                                        startIcon={<UploadIcon />}
-                                                        onClick={() => setShowPaymentModal(true)}
-                                                        sx={{ bgcolor: '#4f46e5', borderRadius: 3, py: 1.5, textTransform: 'none', fontWeight: 700, boxShadow: '0 4px 12px rgba(79,70,229,0.3)' }}
-                                                    >
-                                                        Upload Payment Slip
-                                                    </Button>
-                                                </Paper>
-                                            </Grid>
-                                            <Grid item xs={12} md={7}>
-                                                <Paper sx={{ borderRadius: 4, border: '1px solid #f3f4f6', p: 4, mb: 4 }}>
-                                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#1f2937', mb: 3 }}>Property Manager Details</Typography>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                                                        <Avatar sx={{ width: 64, height: 64, bgcolor: '#eef2ff', color: '#4f46e5', fontSize: '1.5rem', fontWeight: 700 }}>
-                                                            {myBoarding.ownerId.name?.[0] || 'O'}
-                                                        </Avatar>
-                                                        <Box>
-                                                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#374151' }}>{myBoarding.ownerId.name || 'Property Owner'}</Typography>
-                                                            <Typography variant="body2" sx={{ color: '#6b7280' }}>Email: {myBoarding.ownerId.email}</Typography>
-                                                            <Typography variant="body2" sx={{ color: '#6b7280' }}>Phone: {myBoarding.ownerId.phoneNumber || 'Not provided'}</Typography>
-                                                        </Box>
-                                                    </Box>
-                                                </Paper>
+                                                <Grid container spacing={3} sx={{ mb: 4 }}>
+                                                    {[
+                                                        { label: 'Monthly Rent', value: `LKR ${myBoarding?.boardingId?.pricePerMonth?.toLocaleString()}`, icon: <MoneyIcon />, color: '#4f46e5', bg: '#eef2ff' },
+                                                        { label: 'Room Type', value: myBoarding?.boardingId?.roomType, icon: <RoomIcon />, color: '#8b5cf6', bg: '#f5f3ff' },
+                                                        { label: 'Assigned On', value: new Date(myBoarding.startDate).toLocaleDateString(), icon: <CalendarIcon />, color: '#06b6d4', bg: '#ecfeff' }
+                                                    ].map((stat, i) => (
+                                                        <Grid item xs={12} sm={4} key={i}>
+                                                            <Paper sx={{ p: 3, borderRadius: 5, border: '1px solid #f1f5f9', bgcolor: '#fff', height: '100%' }}>
+                                                                <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: stat.bg, color: stat.color, display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+                                                                    {React.cloneElement(stat.icon, { fontSize: 'small' })}
+                                                                </Box>
+                                                                <Typography sx={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, mb: 0.5 }}>{stat.label}</Typography>
+                                                                <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1e293b' }}>{stat.value}</Typography>
+                                                            </Paper>
+                                                        </Grid>
+                                                    ))}
+                                                </Grid>
 
-                                                <Paper sx={{ borderRadius: 4, border: '1px solid #f3f4f6', p: 4 }}>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                                                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1f2937' }}>Payment History</Typography>
-                                                        <ReceiptIcon sx={{ color: '#9ca3af' }} />
+                                                {/* Payment History Timeline */}
+                                                <Paper sx={{ borderRadius: 6, border: '1px solid #f1f5f9', p: 4, bgcolor: '#fff' }}>
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                                                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#1e293b', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <HistoryIcon className="text-indigo-500" /> Payment History
+                                                        </Typography>
+                                                        <Chip label={`${payments.length} Records`} size="small" sx={{ fontWeight: 700, bgcolor: '#f8fafc' }} />
                                                     </Box>
+
                                                     {payments.length > 0 ? (
-                                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                            {payments.map((payment) => (
-                                                                <Box key={payment._id} sx={{ p: 2, borderRadius: 3, border: '1px solid #f9fafb', bgcolor: '#fcfdff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                    <Box>
-                                                                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#374151' }}>{payment.month}</Typography>
-                                                                        <Typography variant="caption" sx={{ color: '#9ca3af' }}>LKR {payment.amount.toLocaleString()}</Typography>
-                                                                    </Box>
-                                                                    <Box sx={{ textAlign: 'right' }}>
-                                                                        <Chip 
-                                                                            label={payment.status} 
-                                                                            size="small" 
-                                                                            color={payment.status === 'Approved' ? 'success' : payment.status === 'Rejected' ? 'error' : 'warning'}
-                                                                            sx={{ fontWeight: 700, height: 24, fontSize: '0.65rem' }}
-                                                                        />
-                                                                        <Typography variant="caption" sx={{ display: 'block', color: '#9ca3af', mt: 0.5 }}>{new Date(payment.createdAt).toLocaleDateString()}</Typography>
+                                                        <Box sx={{ position: 'relative', pl: 3, '&::before': { content: '""', position: 'absolute', left: 7, top: 0, bottom: 0, width: 2, bgcolor: '#f1f5f9' } }}>
+                                                            {payments.map((p, idx) => (
+                                                                <Box key={p._id} sx={{ mb: 3, position: 'relative' }}>
+                                                                    <Box sx={{ 
+                                                                        position: 'absolute', left: -26, top: 4, width: 14, height: 14, 
+                                                                        borderRadius: '50%', border: '3px solid #fff',
+                                                                        bgcolor: p.status === 'Approved' ? '#10b981' : p.status === 'Rejected' ? '#ef4444' : '#f59e0b',
+                                                                        zIndex: 1
+                                                                    }} />
+                                                                    <Box sx={{ 
+                                                                        p: 2.5, borderRadius: 4, bgcolor: '#f8fafc', 
+                                                                        border: '1px solid #f1f5f9', display: 'flex', 
+                                                                        justifyContent: 'space-between', alignItems: 'center',
+                                                                        transition: 'transform 0.2s', '&:hover': { transform: 'scale(1.01)', bgcolor: '#fff' }
+                                                                    }}>
+                                                                        <Box>
+                                                                            <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#334155' }}>{p.month}</Typography>
+                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                                                                                <Typography variant="body2" sx={{ fontWeight: 700, color: '#6366f1' }}>LKR {p.amount.toLocaleString()}</Typography>
+                                                                                {p.isRewardUsed && <Chip label="Reward ✨" size="small" sx={{ height: 18, fontSize: '0.6rem', fontWeight: 800, bgcolor: '#fffbeb', color: '#92400e' }} />}
+                                                                            </Box>
+                                                                        </Box>
+                                                                        <Box sx={{ textAlign: 'right' }}>
+                                                                            <Typography variant="caption" sx={{ display: 'block', color: '#94a3b8', fontWeight: 500, mb: 0.5 }}>{new Date(p.createdAt).toLocaleDateString()}</Typography>
+                                                                            <Chip 
+                                                                                label={p.status} 
+                                                                                size="small" 
+                                                                                color={p.status === 'Approved' ? 'success' : p.status === 'Rejected' ? 'error' : 'warning'}
+                                                                                sx={{ fontWeight: 800, height: 22, fontSize: '0.6rem', textTransform: 'uppercase' }}
+                                                                            />
+                                                                        </Box>
                                                                     </Box>
                                                                 </Box>
                                                             ))}
                                                         </Box>
                                                     ) : (
-                                                        <Box sx={{ py: 4, textAlign: 'center' }}>
-                                                            <ClockIcon sx={{ fontSize: 40, color: '#e5e7eb', mb: 1 }} />
-                                                            <Typography variant="body2" sx={{ color: '#9ca3af' }}>No payment records yet.</Typography>
+                                                        <Box sx={{ py: 6, textAlign: 'center', bgcolor: '#f8fafc', borderRadius: 4, border: '1px dashed #e2e8f0' }}>
+                                                            <ReceiptIcon sx={{ fontSize: 40, color: '#cbd5e1', mb: 1, opacity: 0.5 }} />
+                                                            <Typography variant="body2" sx={{ color: '#94a3b8', fontWeight: 500 }}>No payments recorded yet</Typography>
                                                         </Box>
                                                     )}
+                                                </Paper>
+                                            </Grid>
+
+                                            {/* Right Column: Tracker & Owner */}
+                                            <Grid item xs={12} md={5}>
+                                                {/* Payment Tracker Card */}
+                                                <Paper sx={{ 
+                                                    borderRadius: 6, p: 4, mb: 4, position: 'relative', overflow: 'hidden',
+                                                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                                                    color: '#fff', boxShadow: '0 20px 25px -5px rgba(79,70,229,0.25)'
+                                                }}>
+                                                    <Box sx={{ position: 'relative', zIndex: 1 }}>
+                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 4 }}>
+                                                            <Box>
+                                                                <Typography sx={{ fontSize: '0.7rem', fontWeight: 800, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 2, mb: 0.5 }}>Payment Status</Typography>
+                                                                <Typography variant="h5" sx={{ fontWeight: 900 }}>Next Payment Due</Typography>
+                                                            </Box>
+                                                            <Box sx={{ p: 1, px: 2, borderRadius: 3, bgcolor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                                <StarsIcon sx={{ color: '#fbbf24', fontSize: 18 }} />
+                                                                <Typography sx={{ fontWeight: 800, fontSize: '0.9rem' }}>{profile?.loyaltyPoints || 0} Pts</Typography>
+                                                            </Box>
+                                                        </Box>
+
+                                                        <Typography variant="h2" sx={{ fontWeight: 900, mb: 1, fontFamily: "'Outfit', sans-serif" }}>
+                                                            {getNextPaymentDate(myBoarding.startDate)}
+                                                        </Typography>
+                                                        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 4, fontWeight: 500 }}>
+                                                            Monthly fee: LKR {myBoarding?.boardingId?.pricePerMonth?.toLocaleString()}
+                                                        </Typography>
+
+                                                        <Button 
+                                                            variant="contained" 
+                                                            fullWidth 
+                                                            startIcon={<UploadIcon />}
+                                                            onClick={() => {
+                                                                const basePrice = myBoarding?.boardingId?.pricePerMonth || 0;
+                                                                setPaymentData({ 
+                                                                    ...paymentData, 
+                                                                    amount: basePrice, 
+                                                                    useReward: false, 
+                                                                    pointsUsed: 0 
+                                                                });
+                                                                setShowPaymentModal(true);
+                                                            }}
+                                                            sx={{ 
+                                                                bgcolor: '#fff', color: '#4f46e5', borderRadius: 4, py: 2, 
+                                                                textTransform: 'none', fontWeight: 800, fontSize: '1rem',
+                                                                '&:hover': { bgcolor: 'rgba(255,255,255,0.9)', transform: 'translateY(-2px)' },
+                                                                transition: 'all 0.2s', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                                                            }}
+                                                        >
+                                                            Process Payment
+                                                        </Button>
+                                                    </Box>
+                                                    {/* Decorative Circles */}
+                                                    <Box sx={{ position: 'absolute', top: -50, right: -50, width: 200, height: 200, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+                                                    <Box sx={{ position: 'absolute', bottom: -100, left: -20, width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.03)' }} />
+                                                </Paper>
+
+                                                {/* Property Manager Card */}
+                                                <Paper sx={{ borderRadius: 6, border: '1px solid #f1f5f9', p: 4, bgcolor: '#fff' }}>
+                                                    <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: 1.5, mb: 3 }}>Property Manager</Typography>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, mb: 4 }}>
+                                                        <Avatar 
+                                                            src={myBoarding?.ownerId?.facePhoto}
+                                                            sx={{ width: 80, height: 80, bgcolor: '#eef2ff', color: '#4f46e5', boxSizing: 'content-box', border: '5px solid #f8fafc', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.05)' }}
+                                                        >
+                                                            {myBoarding?.ownerId?.name?.[0] || 'O'}
+                                                        </Avatar>
+                                                        <Box>
+                                                            <Typography variant="h6" sx={{ fontWeight: 900, color: '#1e293b' }}>{myBoarding?.ownerId?.name || 'Assigned Host'}</Typography>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5, p: 0.5, px: 1, borderRadius: 1.5, bgcolor: '#f0f9ff', width: 'fit-content' }}>
+                                                                <ManagerIcon sx={{ fontSize: 16, color: '#0369a1' }} />
+                                                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#0369a1' }}>Verified Owner</Typography>
+                                                            </Box>
+                                                        </Box>
+                                                    </Box>
+                                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                                                        <Box sx={{ p: 2, borderRadius: 4, bgcolor: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                                                            <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Email</Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>{myBoarding?.ownerId?.email}</Typography>
+                                                        </Box>
+                                                        <Box sx={{ p: 2, borderRadius: 4, bgcolor: '#f8fafc', border: '1px solid #f1f5f9' }}>
+                                                            <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>Phone</Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>{myBoarding?.ownerId?.phoneNumber || '+94 XXX XXX XXX'}</Typography>
+                                                        </Box>
+                                                    </Box>
                                                 </Paper>
                                             </Grid>
                                         </Grid>
@@ -792,7 +942,50 @@ const Dashboard = () => {
                                                         onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
                                                         variant="outlined"
                                                         InputProps={{ sx: { borderRadius: 3 } }}
+                                                        helperText={paymentData.useReward ? `Discount LKR 1,200 applied!` : ""}
                                                     />
+
+                                                    <Box sx={{ 
+                                                        p: 2, 
+                                                        bgcolor: (profile?.loyaltyPoints >= 12) ? '#fffbeb' : '#f9fafb', 
+                                                        border: '1px solid',
+                                                        borderColor: (profile?.loyaltyPoints >= 12) ? '#fef3c7' : '#e5e7eb',
+                                                        borderRadius: 3,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        opacity: (profile?.loyaltyPoints >= 12) ? 1 : 0.7
+                                                    }}>
+                                                        <Box>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
+                                                                <StarsIcon sx={{ color: (profile?.loyaltyPoints >= 12) ? '#f59e0b' : '#9ca3af', fontSize: 18 }} />
+                                                                <Typography variant="body2" sx={{ fontWeight: 700, color: (profile?.loyaltyPoints >= 12) ? '#92400e' : '#6b7280' }}>
+                                                                    Redeem 12 Points
+                                                                </Typography>
+                                                            </Box>
+                                                            <Typography variant="caption" sx={{ color: (profile?.loyaltyPoints >= 12) ? '#b45309' : '#9ca3af', display: 'block' }}>
+                                                                {profile?.loyaltyPoints >= 12 
+                                                                    ? "Available! Save LKR 1,200 on this payment" 
+                                                                    : `Need ${12 - (profile?.loyaltyPoints || 0)} more points to redeem`}
+                                                            </Typography>
+                                                        </Box>
+                                                        <input 
+                                                            type="checkbox" 
+                                                            disabled={!profile || profile.loyaltyPoints < 12}
+                                                            className="w-6 h-6 accent-amber-500 cursor-pointer disabled:cursor-not-allowed"
+                                                            checked={paymentData.pointsUsed === 12}
+                                                            onChange={(e) => {
+                                                                const checked = e.target.checked;
+                                                                const basePrice = myBoarding?.boardingId?.pricePerMonth || 0;
+                                                                const pts = checked ? 12 : 0;
+                                                                setPaymentData({ 
+                                                                    ...paymentData, 
+                                                                    pointsUsed: pts,
+                                                                    amount: basePrice - (pts * 100)
+                                                                });
+                                                            }}
+                                                        />
+                                                    </Box>
                                                     
                                                     <Box>
                                                         <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#374151', mb: 1 }}>Upload Slip Image</Typography>
@@ -804,7 +997,29 @@ const Dashboard = () => {
                                                             className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
                                                         />
                                                     </Box>
-
+                                                    <Box sx={{ 
+                                                        p: 2, 
+                                                        bgcolor: '#f8fafc', 
+                                                        borderRadius: 3, 
+                                                        border: '1px solid #e2e8f0',
+                                                        mt: 3
+                                                    }}>
+                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                            <Typography variant="body2" sx={{ color: '#64748b' }}>Original Fee:</Typography>
+                                                            <Typography variant="body2" sx={{ fontWeight: 600, color: '#1f2937' }}>LKR {(myBoarding?.boardingId?.pricePerMonth || 0).toLocaleString()}</Typography>
+                                                        </Box>
+                                                        {paymentData.pointsUsed > 0 && (
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                                                                <Typography variant="body2" sx={{ color: '#059669' }}>Loyalty Discount:</Typography>
+                                                                <Typography variant="body2" sx={{ fontWeight: 600, color: '#059669' }}>- LKR {(paymentData.pointsUsed * 100).toLocaleString()}</Typography>
+                                                            </Box>
+                                                        )}
+                                                        <Divider sx={{ my: 1.5 }} />
+                                                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1f2937' }}>Final Amount:</Typography>
+                                                            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#4f46e5' }}>LKR {paymentData.amount.toLocaleString()}</Typography>
+                                                        </Box>
+                                                    </Box>
                                                     <Divider sx={{ my: 2 }} />
 
                                                     <Box sx={{ display: 'flex', gap: 2 }}>
@@ -863,6 +1078,14 @@ const Dashboard = () => {
                                                     color="success"
                                                     sx={{ fontWeight: 700, borderRadius: 2 }}
                                                 />
+
+                                                <Box sx={{ mt: 3, p: 2, bgcolor: '#fffbeb', borderRadius: 3, border: '1px solid #fef3c7' }}>
+                                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 0.5 }}>
+                                                        <StarsIcon sx={{ color: '#f59e0b', fontSize: 20 }} />
+                                                        <Typography variant="h6" sx={{ fontWeight: 800, color: '#1f2937' }}>{profile?.loyaltyPoints || 0}</Typography>
+                                                    </Box>
+                                                    <Typography variant="caption" sx={{ color: '#b45309', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>Loyalty Points</Typography>
+                                                </Box>
                                             </Card>
                                         </Grid>
 

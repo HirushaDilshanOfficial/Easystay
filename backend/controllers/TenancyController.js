@@ -1,5 +1,5 @@
-const Tenancy = require("../Model/TenancyModel");
-const Boarding = require("../Model/BoardingModel");
+const Tenancy = require("../models/TenancyModel");
+const Boarding = require("../models/BoardingModel");
 const User = require("../models/User");
 
 // @desc    Add a new student tenancy

@@ -6,7 +6,7 @@ const {
     getOwnerTenancies,
     getStudentTenancy,
     removeTenancy,
-} = require("../Controller/TenancyController");
+} = require("../controllers/TenancyController");
 
 // Owner routes
 router.post("/add", protect, authorize("BoardingOwner"), addTenancy);

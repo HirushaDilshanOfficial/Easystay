@@ -718,7 +718,13 @@ const Dashboard = () => {
                                                 }}>
                                                     <Box sx={{ height: 400, position: 'relative' }}>
                                                         <img 
-                                                            src={myBoarding?.boardingId?.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80'} 
+                                                            src={myBoarding?.boardingId?.images?.[0] 
+                                                                ? (myBoarding.boardingId.images[0].startsWith('http') 
+                                                                    ? myBoarding.boardingId.images[0] 
+                                                                    : (myBoarding.boardingId.images[0].startsWith('uploads/') 
+                                                                        ? `http://localhost:5001/${myBoarding.boardingId.images[0]}`
+                                                                        : `http://localhost:5001/uploads/${myBoarding.boardingId.images[0]}`))
+                                                                : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80'} 
                                                             alt={myBoarding?.boardingId?.title}
                                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                                         />
@@ -926,20 +932,25 @@ const Dashboard = () => {
                                                     <TextField
                                                         fullWidth
                                                         label="Payment Month"
-                                                        placeholder="e.g., March 2026"
+                                                        placeholder="e.g., March"
                                                         required
                                                         value={paymentData.month}
-                                                        onChange={(e) => setPaymentData({ ...paymentData, month: e.target.value })}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+                                                            setPaymentData({ ...paymentData, month: val });
+                                                        }}
                                                         variant="outlined"
                                                         InputProps={{ sx: { borderRadius: 3 } }}
                                                     />
                                                     <TextField
                                                         fullWidth
-                                                        type="number"
                                                         label="Amount (LKR)"
                                                         required
                                                         value={paymentData.amount}
-                                                        onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value.replace(/\D/g, '');
+                                                            setPaymentData({ ...paymentData, amount: val });
+                                                        }}
                                                         variant="outlined"
                                                         InputProps={{ sx: { borderRadius: 3 } }}
                                                         helperText={paymentData.useReward ? `Discount LKR 1,200 applied!` : ""}

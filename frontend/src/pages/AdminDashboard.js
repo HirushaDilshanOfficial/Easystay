@@ -33,8 +33,10 @@ import {
     DeleteOutline as DeleteIcon,
     ReportProblemOutlined as WarningIcon,
     PictureAsPdf as PdfIcon,
-    NoteAddOutlined as NewBoardIcon
+    NoteAddOutlined as NewBoardIcon,
+    Campaign as AdIcon
 } from '@mui/icons-material';
+import AdAdmin from './AdAdmin';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -52,6 +54,7 @@ const NAV_ITEMS = [
     { icon: PeopleIcon, label: 'Users', id: 'users' },
     { icon: HomeIcon, label: 'Boardings', id: 'boardings' },
     { icon: NewBoardIcon, label: 'New Boardings', id: 'newBoardings' },
+    { icon: AdIcon, label: 'Advertisements', id: 'advertisements' },
     { icon: ApproveIcon, label: 'Approvals', id: 'approvals' },
 ];
 
@@ -2228,6 +2231,10 @@ const AdminDashboard = () => {
                                 </div>
                             </motion.div>
                         </motion.div>
+                    )}
+
+                    {activeNav === 'advertisements' && (
+                        <AdAdmin hideSidebar={true} />
                     )}
 
                 </main>

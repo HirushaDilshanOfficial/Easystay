@@ -5,7 +5,7 @@ const {
     getStudentPayments, 
     getOwnerPayments, 
     updatePaymentStatus 
-} = require('../Controller/PaymentController');
+} = require('../controllers/PaymentController');
 const { protect, authorize } = require('../middlewares/authMiddleware');
 const { upload } = require('../middlewares/upload');
 

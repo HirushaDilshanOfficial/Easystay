@@ -1,6 +1,6 @@
-const Payment = require('../Model/PaymentModel');
-const Tenancy = require('../Model/TenancyModel');
-const Boarding = require('../Model/BoardingModel');
+const Payment = require('../models/PaymentModel');
+const Tenancy = require('../models/TenancyModel');
+const Boarding = require('../models/BoardingModel');
 const User = require('../models/User');
 
 // @desc    Upload payment slip

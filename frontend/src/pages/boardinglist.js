@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import api from '../api';
 import BoardingCard from '../components/BoardingCard';
 import { Search, RotateCcw as RefreshIcon } from 'lucide-react';
+import Navbar from '../components/Navbar';
+import BoardingListingDashboard from './BoardingListingDashboard';
+import heroBg from '../assets/hero-bg.png';
 
 const HomePage = () => {
     const [boardings, setBoardings] = useState([]);
@@ -50,28 +53,43 @@ const HomePage = () => {
 
     return (
         <div className="min-h-screen bg-slate-50 text-slate-800 font-sans pb-20">
-            {/* Header / Search Section */}
-            <header className="bg-white border-b border-slate-200 pt-28 pb-12 px-6 text-center shadow-sm">
-                <div className="max-w-3xl mx-auto">
-                    <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">Find Your Perfect Stay</h1>
-                    <p className="text-slate-500 font-medium text-lg mb-10">Browse verified boarding places near your university.</p>
+            <Navbar />
+            {/* Header / Search Section with Background Image */}
+            <header 
+                className="relative bg-slate-900 pt-24 pb-12 px-6 text-center shadow-lg border-b border-white/10"
+                style={{ 
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url(${heroBg})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center'
+                }}
+            >
+                <div className="max-w-2xl mx-auto relative z-10">
+                    <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-2 tracking-tight drop-shadow-[0_2px_12px_rgba(0,0,0,0.3)]">
+                        Find Your Perfect Stay
+                    </h1>
+                    <p className="text-gray-100 font-medium text-sm md:text-base mb-6 drop-shadow-[0_2px_4px_rgba(0,0,0,0.2)]">
+                        Browse verified boarding places near your university.
+                    </p>
 
-                    <div className="relative flex items-center bg-white rounded-full shadow-lg shadow-slate-200 border border-slate-100 px-4 py-3 mx-auto w-full max-w-2xl transition-all focus-within:ring-4 focus-within:ring-blue-500/20 focus-within:border-blue-500">
+                    <div className="relative flex items-center bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-white/20 px-5 py-3 mx-auto w-full max-w-lg transition-all focus-within:ring-4 focus-within:ring-blue-500/30 focus-within:border-white">
                         <Search className="text-slate-400 ml-2 shrink-0" size={22} />
                         <input
                             type="text"
                             placeholder="Search by location, university, or keyword (e.g. SLIIT)..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-slate-700 font-medium placeholder-slate-400 w-full"
+                            className="flex-1 bg-transparent border-none outline-none px-4 py-2 text-slate-800 font-bold placeholder-slate-400 w-full text-lg"
                         />
                     </div>
                 </div>
             </header>
 
             <div className="max-w-7xl mx-auto px-6 py-8">
+                {/* Advertisements Banner */}
+                <BoardingListingDashboard />
+
                 {/* Horizontal Top Filters */}
-                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8 sticky top-24 z-20 backdrop-blur-md bg-white/90">
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8 sticky top-[72px] z-20 backdrop-blur-md bg-white/90">
                     <div className="flex flex-col lg:flex-row gap-8 items-end">
                         <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 w-full">
                             {/* Budget Filter */}

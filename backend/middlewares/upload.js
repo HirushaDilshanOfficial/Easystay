@@ -23,8 +23,8 @@ const storage = new CloudinaryStorage({
         if (file.fieldname === 'nicPhoto' || file.fieldname === 'nic') folder = 'easystay/nic';
         if (file.fieldname === 'facePhoto') folder = 'easystay/faces';
         if (file.fieldname === 'boardingDocuments') folder = 'easystay/documents';
-        if (file.fieldname === 'slip') folder = 'easystay/slips';
-        if (file.fieldname === 'media') folder = 'easystay/properties';
+        if (file.fieldname === 'slip' || file.fieldname === 'paymentSlip') folder = 'easystay/slips';
+        if (file.fieldname === 'media' || file.fieldname === 'imageUrl') folder = 'easystay/properties';
 
         return {
             folder: folder,

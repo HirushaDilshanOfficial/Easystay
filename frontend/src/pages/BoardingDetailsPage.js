@@ -257,6 +257,14 @@ const AppointmentBooking = ({ boardingId, ownerName, ownerPhone }) => {
 
     const handleBooking = async (e) => {
         e.preventDefault();
+
+        // Phone Validation (Exactly 10 digits)
+        const phoneRegex = /^[0-9]{10}$/;
+        if (!userData.phone || !phoneRegex.test(userData.phone)) {
+            alert('Please enter a valid 10-digit phone number.');
+            return;
+        }
+
         try {
             await api.post('/appointments/book', {
                 boardingId,
@@ -370,17 +378,22 @@ const AppointmentBooking = ({ boardingId, ownerName, ownerPhone }) => {
                                     disabled={slot.isBooked}
                                     onClick={() => setSelectedSlot(slot.time)}
                                     className={`
-                                        py-2.5 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all duration-200 border flex items-center justify-center gap-1.5
+                                        py-2.5 rounded-xl text-xs sm:text-sm font-bold tracking-wide transition-all duration-200 border flex flex-col items-center justify-center gap-0.5 min-h-[54px]
                                         ${slot.isBooked 
-                                            ? 'bg-slate-100 text-slate-400 border-transparent cursor-not-allowed opacity-60' 
+                                            ? 'bg-red-50 text-red-400 border-red-100 cursor-not-allowed opacity-80' 
                                             : selectedSlot === slot.time 
                                                 ? 'bg-blue-600 text-white border-blue-600 shadow-md transform scale-105 shadow-blue-500/20' 
                                                 : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700'}
                                     `}
-                                    title={slot.isBooked ? 'Slot unavailable' : 'Click to select'}
+                                    title={slot.isBooked ? 'Slot already booked' : 'Click to select'}
                                 >
-                                    <Clock size={12} className={selectedSlot === slot.time ? 'text-white' : 'text-current'} /> 
-                                    {slot.time}
+                                    <div className="flex items-center gap-1.5">
+                                        <Clock size={12} className={selectedSlot === slot.time ? 'text-white' : 'text-current'} /> 
+                                        {slot.time}
+                                    </div>
+                                    {slot.isBooked && (
+                                        <span className="text-[10px] uppercase tracking-tighter font-black text-red-500">Booked</span>
+                                    )}
                                 </button>
                             ))}
                         </div>
@@ -402,7 +415,19 @@ const AppointmentBooking = ({ boardingId, ownerName, ownerPhone }) => {
                                 </div>
                                 <div className="relative">
                                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-                                    <input type="text" placeholder="Phone Number" required value={userData.phone} onChange={e => setUserData({...userData, phone: e.target.value})} className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 block pl-11 p-3.5 transition-all font-medium" />
+                                    <input 
+                                        type="tel" 
+                                        placeholder="Phone Number (10 digits)" 
+                                        required 
+                                        value={userData.phone || ''} 
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            if (val.length <= 10) {
+                                                setUserData({...userData, phone: val});
+                                            }
+                                        }} 
+                                        className="w-full bg-slate-50 border border-slate-200 text-slate-900 text-sm rounded-2xl focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 block pl-11 p-3.5 transition-all font-medium" 
+                                    />
                                 </div>
                             </div>
                         </div>

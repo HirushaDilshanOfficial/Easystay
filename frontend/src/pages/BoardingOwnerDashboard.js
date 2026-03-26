@@ -19,7 +19,8 @@ import {
     CheckCircle as CheckCircleIcon,
     Cancel as CancelIcon,
     Search as SearchIcon,
-    PictureAsPdf as PdfIcon
+    PictureAsPdf as PdfIcon,
+    Campaign as AdIcon
 } from '@mui/icons-material';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -29,6 +30,7 @@ import notificationService from '../services/notificationService';
 import api from '../api';
 import AddEditBoardingPage from './AddEditBoardingPage';
 import OwnerDashboard from './OwnerDashboard';
+import Advertisement from './Advertisements';
 
 const BoardingOwnerDashboard = () => {
     const navigate = useNavigate();
@@ -257,6 +259,7 @@ const BoardingOwnerDashboard = () => {
         { id: 'appointments', label: 'Appointments', icon: <AppointmentsIcon fontSize="small" /> },
         { id: 'students', label: 'Students', icon: <TenantsIcon fontSize="small" /> },
         { id: 'payments', label: 'Payments', icon: <ReceiptIcon fontSize="small" /> },
+        { id: 'advertisements', label: 'Advertisements', icon: <AdIcon fontSize="small" /> },
         { id: 'profile', label: 'Profile', icon: <PersonIcon fontSize="small" /> },
     ];
 
@@ -605,7 +608,12 @@ const BoardingOwnerDashboard = () => {
                                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm"
                                                     placeholder="Enter student name"
                                                     value={studentFormData.studentName}
-                                                    onChange={(e) => setStudentFormData({ ...studentFormData, studentName: e.target.value })}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                                                        setStudentFormData({ ...studentFormData, studentName: val });
+                                                    }}
+                                                    pattern="[A-Za-z\s]+"
+                                                    required
                                                 />
                                             </Grid>
                                             <Grid item xs={12} md={6}>
@@ -615,7 +623,13 @@ const BoardingOwnerDashboard = () => {
                                                     className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm"
                                                     placeholder="Enter phone number"
                                                     value={studentFormData.studentPhone}
-                                                    onChange={(e) => setStudentFormData({ ...studentFormData, studentPhone: e.target.value })}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                                        setStudentFormData({ ...studentFormData, studentPhone: val });
+                                                    }}
+                                                    pattern="[0-9]{10}"
+                                                    maxLength="10"
+                                                    required
                                                 />
                                             </Grid>
                                         </Grid>
@@ -903,6 +917,13 @@ const BoardingOwnerDashboard = () => {
                     {activeTab === 'appointments' && (
                         <Box className="bg-white rounded-2xl border border-gray-100 overflow-hidden min-h-[500px]">
                             <OwnerDashboard embeddedOwnerId={user?.id} />
+                        </Box>
+                    )}
+
+                    {/* ── Advertisements Tab ── */}
+                    {activeTab === 'advertisements' && (
+                        <Box className="bg-white rounded-2xl border border-gray-100 overflow-hidden min-h-[500px]">
+                            <Advertisement hideHeader={true} ownerId={user?.id} />
                         </Box>
                     )}
 

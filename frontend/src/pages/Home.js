@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Search as SearchIcon,
@@ -42,6 +42,19 @@ export default function Home() {
     const [formData, setFormData] = useState({ name: '', email: '', phoneNumber: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
+
+    const { hash } = useLocation();
+    useEffect(() => {
+        if (hash) {
+            const id = hash.replace('#', '');
+            const element = document.getElementById(id);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
+    }, [hash]);
 
     const handleContactSubmit = async (e) => {
         e.preventDefault();
@@ -176,7 +189,7 @@ export default function Home() {
             {/* ──── TESTIMONIALS ──── */}
             <section id="testimonials" className="py-20 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <motion.p variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
+                    <motion.p id="student-life-quote" variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
                         className="text-2xl md:text-3xl font-bold text-gray-700 italic mb-14 max-w-2xl mx-auto leading-relaxed">
                         "From finding to moving in, the <span className="text-blue-600 not-italic font-extrabold">process was seamless.</span>"
                     </motion.p>

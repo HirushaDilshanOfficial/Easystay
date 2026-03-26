@@ -1,5 +1,5 @@
-const Boarding = require("../Model/BoardingModel");
-const Appointment = require("../Model/AppointmentModel");
+const Boarding = require("../models/BoardingModel");
+const Appointment = require("../models/AppointmentModel");
 const User = require("../models/User");
 const sendEmail = require("../utils/emailService");
 

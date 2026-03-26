@@ -12,7 +12,7 @@ const {
     deleteBoarding,
     getOwnerAppointments,
     getOwnerBoardings,
-} = require("../Controller/BoardingController");
+} = require("../controllers/BoardingController");
 
 // ───────────────────────────────────────
 router.post("/add", upload.fields([

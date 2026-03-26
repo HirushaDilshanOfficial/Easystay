@@ -24,10 +24,8 @@ export default function Navbar() {
                     {/* Desktop Nav Links — always visible, centered */}
                     <nav className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-6 text-sm font-semibold text-gray-500">
                         <Link to="/" className="hover:text-blue-600 transition-colors">Home</Link>
-                        <Link to="/#properties" className="hover:text-blue-600 transition-colors">Boarding</Link>
-                        <Link to="/loyalty-demo" className="text-purple-600 font-bold hover:text-purple-700 transition-colors">Loyalty Demo</Link>
-                        <Link to="/payment-demo" className="text-green-600 font-bold hover:text-green-700 transition-colors">Payment Demo</Link>
-                        <Link to="/#testimonials" className="hover:text-blue-600 transition-colors">Student Life</Link>
+                        <Link to="/boardinglist" className="hover:text-blue-600 transition-colors">Boarding</Link>
+                        <Link to="/#student-life-quote" className="hover:text-blue-600 transition-colors">Student Life</Link>
                         <Link to="/#contact" className="hover:text-blue-600 transition-colors">Support</Link>
                     </nav>
 
@@ -63,10 +61,10 @@ export default function Navbar() {
                     >
                         <div className="flex flex-col px-6 py-5 gap-4 text-sm font-semibold text-gray-600">
                             <Link to="/" onClick={() => setIsMenuOpen(false)}>Home</Link>
-                            <Link to="/#properties" onClick={() => setIsMenuOpen(false)}>Boarding</Link>
+                            <Link to="/boardinglist" onClick={() => setIsMenuOpen(false)}>Boarding</Link>
                             <Link to="/loyalty-demo" onClick={() => setIsMenuOpen(false)} className="text-purple-600 font-bold">Loyalty Demo</Link>
                             <Link to="/payment-demo" onClick={() => setIsMenuOpen(false)} className="text-green-600 font-bold">Payment Demo</Link>
-                            <Link to="/#testimonials" onClick={() => setIsMenuOpen(false)}>Student Life</Link>
+                            <Link to="/#student-life-quote" onClick={() => setIsMenuOpen(false)}>Student Life</Link>
                             <Link to="/#contact" onClick={() => setIsMenuOpen(false)}>Support</Link>
                             <hr className="border-gray-100" />
                             <Link to="/login" onClick={() => setIsMenuOpen(false)} className="text-blue-600">Login</Link>

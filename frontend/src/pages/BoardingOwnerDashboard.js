@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
-    Typography, Button, Paper, Grid, Card, CardContent, Avatar, Box, Chip
+    Typography, Button, Paper, Grid, Card, CardContent, Avatar, Box, Chip,
+    TextField, InputAdornment, MenuItem, Select, FormControl, InputLabel
 } from '@mui/material';
 import {
     Logout as LogoutIcon,
@@ -12,11 +13,24 @@ import {
     People as TenantsIcon,
     Star as StarIcon,
     NotificationsActive as BellIcon,
-    AttachMoney as MoneyIcon
+    AttachMoney as MoneyIcon,
+    CalendarMonth as AppointmentsIcon,
+    ReceiptLong as ReceiptIcon,
+    CheckCircle as CheckCircleIcon,
+    Cancel as CancelIcon,
+    Search as SearchIcon,
+    PictureAsPdf as PdfIcon,
+    Campaign as AdIcon
 } from '@mui/icons-material';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import notificationService from '../services/notificationService';
+import api from '../api';
+import AddEditBoardingPage from './AddEditBoardingPage';
+import OwnerDashboard from './OwnerDashboard';
+import Advertisement from './Advertisements';
 
 const BoardingOwnerDashboard = () => {
     const navigate = useNavigate();
@@ -24,21 +38,41 @@ const BoardingOwnerDashboard = () => {
     const { user } = userData || {};
     const [activeTab, setActiveTab] = useState('dashboard');
     const [notifications, setNotifications] = useState([]);
-    const [loading, setLoading] = useState(true);
+
+    // Payments Search/Filter States
+    const [paymentSearch, setPaymentSearch] = useState('');
+    const [paymentStatusFilter, setPaymentStatusFilter] = useState('All');
+    const [paymentPropertyFilter, setPaymentPropertyFilter] = useState('All');
+
+    const [boardings, setBoardings] = useState([]);
+    const [tenancies, setTenancies] = useState([]);
+    const [payments, setPayments] = useState([]);
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'form'
+    const [editingBoardingId, setEditingBoardingId] = useState(null);
+    const [assigningStudent, setAssigningStudent] = useState(false);
+    const [studentFormData, setStudentFormData] = useState({
+        studentEmail: '',
+        studentName: '',
+        studentPhone: '',
+        boardingId: ''
+    });
 
     useEffect(() => {
         loadNotifications();
-    }, []);
+        if (user?.id) {
+            loadBoardings();
+            loadTenancies();
+            loadPayments();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
 
     const loadNotifications = async () => {
-        setLoading(true);
         try {
             const notes = await notificationService.getNotifications();
             setNotifications(notes.data);
         } catch (err) {
             console.error('Failed to load notifications');
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -75,6 +109,145 @@ const BoardingOwnerDashboard = () => {
         }
     };
 
+    const loadBoardings = async () => {
+        try {
+            const res = await api.get(`/boardings/owner/${user.id}`);
+            setBoardings(res.data.data);
+        } catch (err) {
+            console.error('Failed to load boardings');
+        }
+    };
+
+    const handleAddProperty = () => {
+        setEditingBoardingId(null);
+        setViewMode('form');
+    };
+
+    const handleEditProperty = (id) => {
+        setEditingBoardingId(id);
+        setViewMode('form');
+    };
+
+    const handleDeleteProperty = async (id) => {
+        if (window.confirm('Are you sure you want to delete this property?')) {
+            try {
+                await api.delete(`/boardings/delete/${id}`);
+                loadBoardings();
+            } catch (err) {
+                console.error('Failed to delete property');
+            }
+        }
+    };
+
+    const handleFormClose = () => {
+        setViewMode('list');
+        loadBoardings();
+    };
+
+    const loadTenancies = async () => {
+        try {
+            const res = await api.get(`/tenancy/owner/${user.id}`);
+            setTenancies(res.data.data);
+        } catch (err) {
+            console.error('Failed to load tenancies');
+        }
+    };
+
+    const handleAddTenancy = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/tenancy/add', {
+                ...studentFormData,
+                ownerId: user.id
+            });
+            setAssigningStudent(false);
+            setStudentFormData({ studentEmail: '', studentName: '', studentPhone: '', boardingId: '' });
+            loadTenancies();
+        } catch (err) {
+            console.error('Failed to assign student');
+        }
+    };
+
+    const handleRemoveTenancy = async (id) => {
+        if (window.confirm('Are you sure you want to remove this student?')) {
+            try {
+                await api.delete(`/tenancy/${id}`);
+                loadTenancies();
+            } catch (err) {
+                console.error('Failed to remove tenancy');
+            }
+        }
+    };
+
+    const loadPayments = async () => {
+        try {
+            const res = await api.get('/payments/owner-payments');
+            setPayments(res.data.data);
+        } catch (err) {
+            console.error('Failed to load payments');
+        }
+    };
+
+    const handleUpdatePaymentStatus = async (paymentId, status) => {
+        try {
+            await api.put(`/payments/${paymentId}/status`, { status });
+            loadPayments(); // Refresh list
+        } catch (err) {
+            console.error('Failed to update payment status');
+        }
+    };
+
+    const filteredPayments = React.useMemo(() => {
+        return payments.filter(p => {
+            const matchesSearch = 
+                (p.studentId?.name || '').toLowerCase().includes(paymentSearch.toLowerCase()) ||
+                (p.studentId?.email || '').toLowerCase().includes(paymentSearch.toLowerCase()) ||
+                (p.month || '').toLowerCase().includes(paymentSearch.toLowerCase());
+            
+            const matchesStatus = paymentStatusFilter === 'All' || p.status === paymentStatusFilter;
+            const matchesProperty = paymentPropertyFilter === 'All' || p.boardingId?._id === paymentPropertyFilter;
+
+            return matchesSearch && matchesStatus && matchesProperty;
+        });
+    }, [payments, paymentSearch, paymentStatusFilter, paymentPropertyFilter]);
+
+    const exportPaymentsPDF = () => {
+        const doc = jsPDF();
+        
+        // Add header
+        doc.setFontSize(20);
+        doc.text('Payment Report', 14, 22);
+        doc.setFontSize(10);
+        doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 30);
+        doc.text(`Owner: ${user.name || user.email}`, 14, 35);
+        
+        const tableColumn = ["Student", "Property", "Month", "Amount (LKR)", "Status", "Date"];
+        const tableRows = [];
+
+        filteredPayments.forEach(p => {
+            const paymentData = [
+                p.studentId?.name || p.studentId?.email || 'N/A',
+                p.boardingId?.title || 'N/A',
+                p.month,
+                p.amount.toLocaleString(),
+                p.status,
+                new Date(p.createdAt).toLocaleDateString()
+            ];
+            tableRows.push(paymentData);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 40,
+            theme: 'grid',
+            headStyles: { fillStyle: '#1e40af', textColor: '#ffffff', fontStyle: 'bold' },
+            alternateRowStyles: { fillColor: '#f8fafc' }
+        });
+
+        doc.save(`Payments_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    };
+
     const handleLogout = () => {
         authService.logout();
         navigate('/login');
@@ -83,6 +256,10 @@ const BoardingOwnerDashboard = () => {
     const sidebarItems = [
         { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
         { id: 'properties', label: 'My Properties', icon: <ApartmentIcon fontSize="small" /> },
+        { id: 'appointments', label: 'Appointments', icon: <AppointmentsIcon fontSize="small" /> },
+        { id: 'students', label: 'Students', icon: <TenantsIcon fontSize="small" /> },
+        { id: 'payments', label: 'Payments', icon: <ReceiptIcon fontSize="small" /> },
+        { id: 'advertisements', label: 'Advertisements', icon: <AdIcon fontSize="small" /> },
         { id: 'profile', label: 'Profile', icon: <PersonIcon fontSize="small" /> },
     ];
 
@@ -156,6 +333,10 @@ const BoardingOwnerDashboard = () => {
                                         <Button
                                             variant="contained"
                                             startIcon={<AddIcon />}
+                                            onClick={() => {
+                                                setActiveTab('properties');
+                                                handleAddProperty();
+                                            }}
                                             sx={{ mt: 3, bgcolor: '#fff', color: '#1e40af', fontWeight: 700, borderRadius: 3, px: 4, py: 1.2, textTransform: 'none', '&:hover': { bgcolor: 'rgba(255,255,255,0.9)' } }}
                                         >
                                             Add New Property
@@ -168,10 +349,10 @@ const BoardingOwnerDashboard = () => {
 
                             {/* Stat Cards */}
                             {[
-                                { label: 'Total Properties', value: '0', sub: 'No properties yet', icon: <ApartmentIcon sx={{ color: '#3b82f6', fontSize: 22 }} />, bg: '#eff6ff', hover: 'rgba(59,130,246,0.12)' },
-                                { label: 'Active Tenants', value: '0', sub: 'No tenants yet', icon: <TenantsIcon sx={{ color: '#10b981', fontSize: 22 }} />, bg: '#ecfdf5', hover: 'rgba(16,185,129,0.12)' },
-                                { label: 'Monthly Revenue', value: 'LKR 0', sub: 'Start earning', icon: <MoneyIcon sx={{ color: '#f59e0b', fontSize: 22 }} />, bg: '#fffbeb', hover: 'rgba(245,158,11,0.12)' },
-                                { label: 'Avg. Rating', value: '—', sub: 'No reviews yet', icon: <StarIcon sx={{ color: '#8b5cf6', fontSize: 22 }} />, bg: '#f5f3ff', hover: 'rgba(139,92,246,0.12)' },
+                                { label: 'Total Properties', value: boardings.length.toString(), sub: boardings.length > 0 ? `${boardings.length} Active Listings` : 'No properties yet', icon: <ApartmentIcon sx={{ color: '#3b82f6', fontSize: 22 }} />, bg: '#eff6ff', hover: 'rgba(59,130,246,0.12)' },
+                                { label: 'Active Tenants', value: tenancies.length.toString(), sub: tenancies.length > 0 ? `${tenancies.length} Occupied Rooms` : 'No active tenants', icon: <TenantsIcon sx={{ color: '#10b981', fontSize: 22 }} />, bg: '#ecfdf5', hover: 'rgba(16,185,129,0.12)' },
+                                { label: 'Monthly Revenue', value: `LKR ${payments.filter(p => p.status === 'Approved').reduce((acc, curr) => acc + curr.amount, 0).toLocaleString()}`, sub: 'Approved revenue', icon: <MoneyIcon sx={{ color: '#f59e0b', fontSize: 22 }} />, bg: '#fffbeb', hover: 'rgba(245,158,11,0.12)' },
+                                { label: 'Pending Slips', value: payments.filter(p => p.status === 'Pending').length.toString(), sub: 'Review required', icon: <ReceiptIcon sx={{ color: '#8b5cf6', fontSize: 22 }} />, bg: '#f5f3ff', hover: 'rgba(139,92,246,0.12)' },
                             ].map((stat, i) => (
                                 <Grid item xs={12} sm={6} md={3} key={i}>
                                     <Card sx={{ borderRadius: 4, border: '1px solid #f3f4f6', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: `0 12px 24px ${stat.hover}` } }}>
@@ -195,9 +376,14 @@ const BoardingOwnerDashboard = () => {
                                     <Box sx={{ p: 4 }}>
                                         <Typography variant="h6" sx={{ fontWeight: 700, color: '#1f2937', mb: 1 }}>🚀 Get Started</Typography>
                                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-                                            {['Add your first property listing', 'Upload high-quality photos', 'Set competitive pricing to attract tenants'].map((tip, i) => (
+                                            {boardings.length === 0 ? ['Add your first property listing', 'Upload high-quality photos', 'Set competitive pricing to attract tenants'].map((tip, i) => (
                                                 <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                                     <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>{i + 1}</Box>
+                                                    <Typography variant="body2" sx={{ color: '#4b5563', fontWeight: 500 }}>{tip}</Typography>
+                                                </Box>
+                                            )) : ['Keep your availability updated', 'Respond to appointments promptly', 'Ask students for reviews'].map((tip, i) => (
+                                                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                                    <Box sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 700, flexShrink: 0 }}>{i + 1}</Box>
                                                     <Typography variant="body2" sx={{ color: '#4b5563', fontWeight: 500 }}>{tip}</Typography>
                                                 </Box>
                                             ))}
@@ -241,8 +427,8 @@ const BoardingOwnerDashboard = () => {
                                                         </div>
                                                         <div className="flex-1 min-w-0">
                                                             <div className="flex items-center justify-between mb-0.5">
-                                                                <Typography variant="body2" className="font-bold text-gray-800 truncate">{note.title}</Typography>
-                                                                <Typography variant="caption" className="text-gray-400">{formatTime(note.createdAt)}</Typography>
+                                                                 <Typography variant="body2" className="font-bold text-gray-800 truncate">{note.title}</Typography>
+                                                                 <Typography variant="caption" className="text-gray-400">{formatTime(note.createdAt)}</Typography>
                                                             </div>
                                                             <Typography variant="caption" className="text-gray-500 line-clamp-2 leading-tight">
                                                                 {note.description}
@@ -264,25 +450,480 @@ const BoardingOwnerDashboard = () => {
 
                     {/* ── My Properties Tab ── */}
                     {activeTab === 'properties' && (
-                        <Box>
-                            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1f2937', mb: 1 }}>My Properties</Typography>
-                            <Typography variant="body2" sx={{ color: '#9ca3af', mb: 4 }}>Manage and list your boarding places</Typography>
-                            <Paper sx={{ borderRadius: 4, border: '1px solid #f3f4f6', p: 6, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                <Box sx={{ width: 100, height: 100, borderRadius: '50%', background: 'linear-gradient(135deg, #eff6ff, #f5f3ff)', display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
-                                    <ApartmentIcon sx={{ fontSize: 48, color: '#93c5fd' }} />
+                        <Box className="min-h-[500px]">
+                            {viewMode === 'list' ? (
+                                <Box>
+                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                                        <div>
+                                            <Typography variant="h5" sx={{ fontWeight: 800, color: '#1f2937' }}>My Properties</Typography>
+                                            <Typography variant="body2" sx={{ color: '#9ca3af' }}>You have {boardings.length} properties listed</Typography>
+                                        </div>
+                                        <Button 
+                                            variant="contained" 
+                                            startIcon={<AddIcon />} 
+                                            onClick={handleAddProperty}
+                                            sx={{ borderRadius: 3, textTransform: 'none', px: 3, fontWeight: 700 }}
+                                        >
+                                            Add New Place
+                                        </Button>
+                                    </Box>
+
+                                    {boardings.length === 0 ? (
+                                        <Paper sx={{ p: 8, textAlign: 'center', borderRadius: 4, border: '1px dashed #e5e7eb', bgcolor: 'transparent' }}>
+                                            <ApartmentIcon sx={{ fontSize: 48, color: '#d1d5db', mb: 2 }} />
+                                            <Typography variant="h6" sx={{ fontWeight: 700, color: '#374151' }}>No properties found</Typography>
+                                            <Typography variant="body2" sx={{ color: '#9ca3af', mb: 3 }}>Start by adding your first boarding house listing.</Typography>
+                                            <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddProperty} sx={{ borderRadius: 2, fontWeight: 700 }}>Add Your First Property</Button>
+                                        </Paper>
+                                    ) : (
+                                        <Grid container spacing={3}>
+                                            {boardings.map((p) => (
+                                                <Grid item xs={12} sm={6} md={4} key={p._id}>
+                                                    <Card sx={{ borderRadius: 4, overflow: 'hidden', border: '1px solid #f3f4f6', transition: 'all 0.3s', '&:hover': { transform: 'translateY(-4px)', boxShadow: '0 12px 24px rgba(0,0,0,0.08)' } }}>
+                                                        <Box sx={{ position: 'relative', height: 160 }}>
+                                                            <img 
+                                                                src={p.images?.[0] || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80'} 
+                                                                alt={p.title}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                            />
+                                                            <Chip 
+                                                                label={p.isApproved ? 'Approved' : 'Pending Approval'} 
+                                                                size="small" 
+                                                                color={p.isApproved ? 'success' : 'warning'}
+                                                                sx={{ position: 'absolute', top: 12, left: 12, fontWeight: 700, borderRadius: 2 }}
+                                                            />
+                                                        </Box>
+                                                        <CardContent sx={{ p: 2.5 }}>
+                                                            <Typography variant="subtitle1" sx={{ fontWeight: 800, color: '#1f2937', mb: 0.5, lineClamp: 1, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                                {p.title}
+                                                            </Typography>
+                                                            <Typography variant="caption" sx={{ color: '#9ca3af', display: '-webkit-box', mb: 2, WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                                {p.address}
+                                                            </Typography>
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: '#3b82f6' }}>LKR {p.pricePerMonth.toLocaleString()}</Typography>
+                                                                <Typography variant="caption" sx={{ bgcolor: '#f3f4f6', px: 1, py: 0.5, borderRadius: 1.5, fontWeight: 700, color: '#4b5563' }}>{p.roomType}</Typography>
+                                                            </Box>
+                                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                                <Button 
+                                                                    fullWidth 
+                                                                    variant="outlined" 
+                                                                    size="small" 
+                                                                    onClick={() => handleEditProperty(p._id)}
+                                                                    sx={{ borderRadius: 2, fontWeight: 700, textTransform: 'none' }}
+                                                                >
+                                                                    Edit
+                                                                </Button>
+                                                                <Button 
+                                                                    variant="outlined" 
+                                                                    color="error" 
+                                                                    size="small" 
+                                                                    onClick={() => handleDeleteProperty(p._id)}
+                                                                    sx={{ borderRadius: 2, minWidth: 40 }}
+                                                                >
+                                                                    🗑️
+                                                                </Button>
+                                                            </Box>
+                                                        </CardContent>
+                                                    </Card>
+                                                </Grid>
+                                            ))}
+                                        </Grid>
+                                    )}
                                 </Box>
-                                <Typography variant="h5" sx={{ fontWeight: 700, color: '#1f2937', mb: 1 }}>No Properties Listed</Typography>
-                                <Typography variant="body1" sx={{ color: '#9ca3af', maxWidth: 420, mb: 4 }}>
-                                    You haven't added any boarding places yet. Start listing your property to connect with SLIIT students looking for a place to stay.
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<AddIcon />}
-                                    sx={{ bgcolor: '#3b82f6', fontWeight: 700, borderRadius: 3, px: 5, py: 1.5, textTransform: 'none', boxShadow: '0 4px 14px rgba(59,130,246,0.4)', '&:hover': { bgcolor: '#2563eb' } }}
+                            ) : (
+                                <Box className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                                     {/* Pass the ID for editing mode or null for add mode */}
+                                     {editingBoardingId ? (
+                                        <div className="p-4">
+                                            {/* We need to update AddEditBoardingPage to accept an 'id' prop or use routing */}
+                                            {/* Since AddEditBoardingPage currently uses useParams(), we might need a small refactor there too */}
+                                            {/* For now, let's assume we can navigate or pass it */}
+                                            <Typography variant="body2" sx={{ mb: 2, color: '#6b7280', cursor: 'pointer', '&:hover': { color: '#3b82f6' } }} onClick={handleFormClose}>← Back to list</Typography>
+                                            <AddEditBoardingPage onClose={handleFormClose} editId={editingBoardingId} />
+                                        </div>
+                                     ) : (
+                                        <div className="p-4">
+                                            <Typography variant="body2" sx={{ mb: 2, color: '#6b7280', cursor: 'pointer', '&:hover': { color: '#3b82f6' } }} onClick={handleFormClose}>← Back to list</Typography>
+                                            <AddEditBoardingPage onClose={handleFormClose} />
+                                        </div>
+                                     )}
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+
+                    {/* ── Students Tab ── */}
+                    {activeTab === 'students' && (
+                        <Box className="min-h-[500px]">
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                                <div>
+                                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#1f2937' }}>Student Management</Typography>
+                                    <Typography variant="body2" sx={{ color: '#9ca3af' }}>Manage students staying in your properties</Typography>
+                                </div>
+                                <Button 
+                                    variant="contained" 
+                                    startIcon={<AddIcon />} 
+                                    onClick={() => setAssigningStudent(true)}
+                                    sx={{ borderRadius: 3, textTransform: 'none', px: 3, fontWeight: 700 }}
                                 >
-                                    Add Your First Property
+                                    Assign New Student
                                 </Button>
+                            </Box>
+
+                            {assigningStudent && (
+                                <Paper sx={{ p: 4, borderRadius: 4, mb: 4, border: '1px solid #e5e7eb' }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>Assign Student to Property</Typography>
+                                    <form onSubmit={handleAddTenancy}>
+                                        <Grid container spacing={3}>
+                                            <Grid item xs={12} md={6}>
+                                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#6b7280', mb: 1, display: 'block' }}>STUDENT EMAIL *</Typography>
+                                                <input 
+                                                    type="email" 
+                                                    required 
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm"
+                                                    placeholder="student@example.com"
+                                                    value={studentFormData.studentEmail}
+                                                    onChange={(e) => setStudentFormData({ ...studentFormData, studentEmail: e.target.value })}
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} md={6}>
+                                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#6b7280', mb: 1, display: 'block' }}>SELECT PROPERTY *</Typography>
+                                                <select 
+                                                    required 
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm"
+                                                    value={studentFormData.boardingId}
+                                                    onChange={(e) => setStudentFormData({ ...studentFormData, boardingId: e.target.value })}
+                                                >
+                                                    <option value="">Choose a property...</option>
+                                                    {boardings.filter(b => b.isApproved).map(b => (
+                                                        <option key={b._id} value={b._id}>{b.title}</option>
+                                                    ))}
+                                                </select>
+                                            </Grid>
+                                            <Grid item xs={12} md={6}>
+                                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#6b7280', mb: 1, display: 'block' }}>STUDENT NAME</Typography>
+                                                <input 
+                                                    type="text" 
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm"
+                                                    placeholder="Enter student name"
+                                                    value={studentFormData.studentName}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/[^A-Za-z\s]/g, '');
+                                                        setStudentFormData({ ...studentFormData, studentName: val });
+                                                    }}
+                                                    pattern="[A-Za-z\s]+"
+                                                    required
+                                                />
+                                            </Grid>
+                                            <Grid item xs={12} md={6}>
+                                                <Typography variant="caption" sx={{ fontWeight: 700, color: '#6b7280', mb: 1, display: 'block' }}>STUDENT PHONE</Typography>
+                                                <input 
+                                                    type="text" 
+                                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm"
+                                                    placeholder="Enter phone number"
+                                                    value={studentFormData.studentPhone}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                                                        setStudentFormData({ ...studentFormData, studentPhone: val });
+                                                    }}
+                                                    pattern="[0-9]{10}"
+                                                    maxLength="10"
+                                                    required
+                                                />
+                                            </Grid>
+                                        </Grid>
+                                        <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+                                            <Button onClick={() => setAssigningStudent(false)} sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600 }}>Cancel</Button>
+                                            <Button type="submit" variant="contained" sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 600, px: 4 }}>Confirm Assignment</Button>
+                                        </Box>
+                                    </form>
+                                </Paper>
+                            )}
+
+                            <Paper sx={{ borderRadius: 4, border: '1px solid #f3f4f6', overflow: 'hidden' }}>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50 border-b border-gray-100">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Property</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Assigned Date</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {tenancies.length > 0 ? tenancies.map((t) => (
+                                                <tr key={t._id} className="hover:bg-gray-50/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar sx={{ width: 32, height: 32, bgcolor: '#eff6ff', color: '#3b82f6', fontSize: '0.875rem' }}>{t.studentName?.[0] || t.studentEmail[0].toUpperCase()}</Avatar>
+                                                            <div>
+                                                                <Typography variant="body2" sx={{ fontWeight: 700, color: '#1f2937' }}>{t.studentName || 'Unnamed Student'}</Typography>
+                                                                <Typography variant="caption" sx={{ color: '#9ca3af' }}>{t.studentEmail}</Typography>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#4b5563' }}>{t.boardingId?.title}</Typography>
+                                                        <Typography variant="caption" sx={{ color: '#9ca3af' }}>{t.boardingId?.address}</Typography>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Typography variant="body2" sx={{ color: '#4b5563' }}>{new Date(t.createdAt).toLocaleDateString()}</Typography>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Button 
+                                                            size="small" 
+                                                            color="error" 
+                                                            onClick={() => handleRemoveTenancy(t._id)}
+                                                            sx={{ minWidth: 0, p: 1, borderRadius: 2 }}
+                                                        >
+                                                            🗑️
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan="4" className="px-6 py-12 text-center text-gray-400">
+                                                        <TenantsIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
+                                                        <Typography variant="body2">No students assigned yet</Typography>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </Paper>
+                        </Box>
+                    )}
+
+                    {/* ── Payments Tab ── */}
+                    {activeTab === 'payments' && (
+                        <Box className="min-h-[500px]">
+                            <Box sx={{ mb: 4 }}>
+                                <Typography variant="h5" sx={{ fontWeight: 800, color: '#1f2937' }}>Payment Tracking</Typography>
+                                <Typography variant="body2" sx={{ color: '#9ca3af' }}>Review and verify payment slips from your tenants</Typography>
+                            </Box>
+
+                            {/* Pending Payments */}
+                            {payments.filter(p => p.status === 'Pending').length > 0 && (
+                                <Box sx={{ mb: 6 }}>
+                                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#f59e0b', mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <BellIcon fontSize="small" /> Pending Review
+                                    </Typography>
+                                    <Grid container spacing={3}>
+                                        {payments.filter(p => p.status === 'Pending').map((p) => (
+                                            <Grid item xs={12} md={6} key={p._id}>
+                                                <Card sx={{ borderRadius: 4, border: '1px solid #fef3c7', bgcolor: '#fffcf5' }}>
+                                                    <CardContent sx={{ p: 3 }}>
+                                                        <Box sx={{ display: 'flex', gap: 2 }}>
+                                                            <Box 
+                                                                component="a" 
+                                                                href={p.slipImage} 
+                                                                target="_blank"
+                                                                sx={{ 
+                                                                    width: 80, 
+                                                                    height: 80, 
+                                                                    borderRadius: 2, 
+                                                                    overflow: 'hidden', 
+                                                                    border: '2px solid #fff', 
+                                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                                                    cursor: 'pointer',
+                                                                    flexShrink: 0
+                                                                }}
+                                                            >
+                                                                <img src={p.slipImage} alt="Slip" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            </Box>
+                                                            <Box sx={{ flexGrow: 1 }}>
+                                                                <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1f2937' }}>{p.studentId?.name || p.studentId?.email}</Typography>
+                                                                <Typography variant="caption" sx={{ color: '#6b7280', display: 'block' }}>Property: {p.boardingId?.title}</Typography>
+                                                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                                                    <Typography variant="body2" sx={{ fontWeight: 700, color: '#1e40af' }}>LKR {p.amount.toLocaleString()}</Typography>
+                                                                    <Typography variant="caption" sx={{ bgcolor: '#eef2ff', px: 1, py: 0.2, borderRadius: 1, fontWeight: 700, color: '#4338ca' }}>{p.month}</Typography>
+                                                                </Box>
+                                                                {p.isRewardUsed && (
+                                                                    <Typography variant="caption" sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5, color: '#059669', fontStyle: 'italic', fontWeight: 700 }}>
+                                                                        <StarIcon sx={{ fontSize: 14, color: '#f59e0b' }} /> Loyalty Discount (-LKR {p.discountAmount?.toLocaleString() || (p.pointsUsed * 100).toLocaleString()})
+                                                                    </Typography>
+                                                                )}
+                                                            </Box>
+                                                        </Box>
+                                                        <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+                                                            <Button 
+                                                                fullWidth 
+                                                                variant="contained" 
+                                                                color="success" 
+                                                                startIcon={<CheckCircleIcon />}
+                                                                onClick={() => handleUpdatePaymentStatus(p._id, 'Approved')}
+                                                                sx={{ borderRadius: 2.5, textTransform: 'none', fontWeight: 700 }}
+                                                            >
+                                                                Approve
+                                                            </Button>
+                                                            <Button 
+                                                                fullWidth 
+                                                                variant="outlined" 
+                                                                color="error" 
+                                                                startIcon={<CancelIcon />}
+                                                                onClick={() => handleUpdatePaymentStatus(p._id, 'Rejected')}
+                                                                sx={{ borderRadius: 2.5, textTransform: 'none', fontWeight: 700 }}
+                                                            >
+                                                                Reject
+                                                            </Button>
+                                                        </Box>
+                                                    </CardContent>
+                                                </Card>
+                                            </Grid>
+                                        ))}
+                                    </Grid>
+                                </Box>
+                            )}
+
+                            {/* Payment History */}
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, mt: 4 }}>
+                                <Typography variant="h6" sx={{ fontWeight: 800, color: '#1f2937' }}>Payment History</Typography>
+                                <Button
+                                    variant="outlined"
+                                    startIcon={<PdfIcon />}
+                                    onClick={exportPaymentsPDF}
+                                    sx={{ borderRadius: 2.5, textTransform: 'none', fontWeight: 700, borderColor: '#e2e8f0', color: '#475569', '&:hover': { bgcolor: '#f8fafc', borderColor: '#cbd5e1' } }}
+                                >
+                                    Export PDF
+                                </Button>
+                            </Box>
+
+                            <Paper sx={{ p: 2, mb: 3, borderRadius: 4, border: '1px solid #f3f4f6', bgcolor: '#fff' }}>
+                                <Grid container spacing={2} alignItems="center">
+                                    <Grid item xs={12} md={5}>
+                                        <TextField
+                                            fullWidth
+                                            size="small"
+                                            placeholder="Search by student or month..."
+                                            value={paymentSearch}
+                                            onChange={(e) => setPaymentSearch(e.target.value)}
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <SearchIcon sx={{ color: '#9ca3af', fontSize: 20 }} />
+                                                    </InputAdornment>
+                                                ),
+                                                sx: { borderRadius: 3, bgcolor: '#f9fafb' }
+                                            }}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={6} md={3}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel sx={{ fontSize: '0.8rem' }}>Status</InputLabel>
+                                            <Select
+                                                value={paymentStatusFilter}
+                                                label="Status"
+                                                onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                                                sx={{ borderRadius: 3, bgcolor: '#f9fafb' }}
+                                            >
+                                                <MenuItem value="All">All Statuses</MenuItem>
+                                                <MenuItem value="Pending">Pending</MenuItem>
+                                                <MenuItem value="Approved">Approved</MenuItem>
+                                                <MenuItem value="Rejected">Rejected</MenuItem>
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                    <Grid item xs={6} md={4}>
+                                        <FormControl fullWidth size="small">
+                                            <InputLabel sx={{ fontSize: '0.8rem' }}>Property</InputLabel>
+                                            <Select
+                                                value={paymentPropertyFilter}
+                                                label="Property"
+                                                onChange={(e) => setPaymentPropertyFilter(e.target.value)}
+                                                sx={{ borderRadius: 3, bgcolor: '#f9fafb' }}
+                                            >
+                                                <MenuItem value="All">All Properties</MenuItem>
+                                                {boardings.map(b => (
+                                                    <MenuItem key={b._id} value={b._id}>{b.title}</MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
+                                    </Grid>
+                                </Grid>
+                            </Paper>
+
+                            <Paper sx={{ borderRadius: 4, border: '1px solid #f3f4f6', overflow: 'hidden' }}>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50 border-b border-gray-100">
+                                            <tr>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Property</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Month</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Amount</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Redemption</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                                                <th className="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {filteredPayments.length > 0 ? filteredPayments.map((p) => (
+                                                <tr key={p._id} className="hover:bg-gray-50/50 transition-colors">
+                                                    <td className="px-6 py-4">
+                                                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1f2937' }}>{p.studentId?.name || 'Student'}</Typography>
+                                                        <Typography variant="caption" sx={{ color: '#9ca3af' }}>{p.studentId?.email}</Typography>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#4b5563' }}>{p.boardingId?.title}</Typography>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Chip label={p.month} size="small" sx={{ fontWeight: 700, fontSize: '0.65rem', borderRadius: 1 }} />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Typography variant="body2" sx={{ fontWeight: 700, color: '#1f2937' }}>LKR {p.amount.toLocaleString()}</Typography>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {p.isRewardUsed ? (
+                                                            <Chip 
+                                                                label={`-${p.pointsUsed} Pts`} 
+                                                                size="small" 
+                                                                sx={{ bgcolor: '#fffbeb', color: '#92400e', fontWeight: 800, border: '1px solid #fef3c7' }} 
+                                                            />
+                                                        ) : (
+                                                            <Typography variant="caption" sx={{ color: '#9ca3af' }}>None</Typography>
+                                                        )}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Chip 
+                                                            label={p.status} 
+                                                            size="small" 
+                                                            color={p.status === 'Approved' ? 'success' : p.status === 'Rejected' ? 'error' : 'warning'}
+                                                            sx={{ fontWeight: 700, height: 24, fontSize: '0.65rem' }}
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <Typography variant="caption" sx={{ color: '#9ca3af' }}>{new Date(p.createdAt).toLocaleDateString()}</Typography>
+                                                    </td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan="7" className="px-6 py-12 text-center text-gray-400">
+                                                        <ReceiptIcon sx={{ fontSize: 40, mb: 1, opacity: 0.5 }} />
+                                                        <Typography variant="body2">No payment records found</Typography>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Paper>
+                        </Box>
+                    )}
+
+                    {/* ── Appointments Tab ── */}
+                    {activeTab === 'appointments' && (
+                        <Box className="bg-white rounded-2xl border border-gray-100 overflow-hidden min-h-[500px]">
+                            <OwnerDashboard embeddedOwnerId={user?.id} />
+                        </Box>
+                    )}
+
+                    {/* ── Advertisements Tab ── */}
+                    {activeTab === 'advertisements' && (
+                        <Box className="bg-white rounded-2xl border border-gray-100 overflow-hidden min-h-[500px]">
+                            <Advertisement hideHeader={true} ownerId={user?.id} />
                         </Box>
                     )}
 

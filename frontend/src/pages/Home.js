@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Search as SearchIcon,
@@ -39,10 +39,22 @@ const FEATURES = [
 ];
 
 export default function Home() {
-    const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+    const [formData, setFormData] = useState({ name: '', email: '', phoneNumber: '', message: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [submitStatus, setSubmitStatus] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
+
+    const { hash } = useLocation();
+    useEffect(() => {
+        if (hash) {
+            const id = hash.replace('#', '');
+            const element = document.getElementById(id);
+            if (element) {
+                setTimeout(() => {
+                    element.scrollIntoView({ behavior: 'smooth' });
+                }, 100);
+            }
+        }
+    }, [hash]);
 
     const handleContactSubmit = async (e) => {
         e.preventDefault();
@@ -51,7 +63,7 @@ export default function Home() {
         try {
             await contactService.submitContactForm(formData);
             setSubmitStatus({ type: 'success', message: "Thanks! We'll get back to you very soon." });
-            setFormData({ name: '', email: '', message: '' });
+            setFormData({ name: '', email: '', phoneNumber: '', message: '' });
         } catch {
             setSubmitStatus({ type: 'error', message: 'Failed to send. Please try again.' });
         } finally {
@@ -98,23 +110,10 @@ export default function Home() {
                                 Discover a new standard of academic residency. Modern, verified, and strategically located boarding for the ambitious SLIIT community.
                             </motion.p>
 
-                            {/* Search Bar */}
-                            <motion.div variants={fade} className="flex items-center gap-2 bg-white/95 backdrop-blur-md rounded-2xl shadow-lg px-4 py-3 mb-8 w-full max-w-lg">
-                                <SearchIcon sx={{ color: '#9ca3af', fontSize: 20 }} />
-                                <input
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={e => setSearchQuery(e.target.value)}
-                                    placeholder="Search area, building..."
-                                    className="flex-1 text-sm text-gray-700 placeholder-gray-400 outline-none bg-transparent font-medium"
-                                />
-                                <div className="flex items-center gap-1.5 border-l border-gray-200 pl-3 pr-2 cursor-pointer hover:text-blue-600 transition-colors">
-                                    <ApartmentIcon sx={{ color: '#6b7280', fontSize: 17 }} />
-                                    <span className="text-sm text-gray-500 font-semibold">Ty</span>
-                                    <span className="text-gray-400 text-xs">▾</span>
-                                </div>
-                                <Link to="#" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl shadow shadow-blue-500/20 transition-all whitespace-nowrap ml-1">
-                                    Find Your Home
+                            {/* Hero Action Button */}
+                            <motion.div variants={fade} className="mb-10">
+                                <Link to="/boardinglist" className="inline-flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-base px-8 py-4 rounded-xl shadow-xl shadow-blue-600/30 transition-all hover:-translate-y-1">
+                                    Find Boarding <ArrowIcon sx={{ fontSize: 20, ml: 1 }} />
                                 </Link>
                             </motion.div>
 
@@ -154,7 +153,7 @@ export default function Home() {
                             <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight mb-2">Curated Residences</h2>
                             <p className="text-gray-500 font-medium text-sm">Every property is hand-verified by our wardens for safety and comfort standards.</p>
                         </div>
-                        <Link to="#" className="hidden md:flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">
+                        <Link to="/boardinglist" className="hidden md:flex items-center gap-1 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors">
                             View all properties <ArrowIcon fontSize="small" />
                         </Link>
                     </div>
@@ -190,7 +189,7 @@ export default function Home() {
             {/* ──── TESTIMONIALS ──── */}
             <section id="testimonials" className="py-20 bg-gray-50">
                 <div className="max-w-7xl mx-auto px-6 text-center">
-                    <motion.p variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
+                    <motion.p id="student-life-quote" variants={fade} initial="hidden" whileInView="visible" viewport={{ once: true }}
                         className="text-2xl md:text-3xl font-bold text-gray-700 italic mb-14 max-w-2xl mx-auto leading-relaxed">
                         "From finding to moving in, the <span className="text-blue-600 not-italic font-extrabold">process was seamless.</span>"
                     </motion.p>
@@ -287,8 +286,19 @@ export default function Home() {
                                     </motion.div>
                                 )}
                                 <div className="grid sm:grid-cols-2 gap-4">
-                                    <FormField label="Name" type="text" value={formData.name} onChange={v => setFormData({ ...formData, name: v })} placeholder="Alex Johnson" />
-                                    <FormField label="Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="alex@my.sliit.lk" />
+                                    <FormField label="Name" type="text" value={formData.name} onChange={v => {
+                                        if (/^[a-zA-Z\s]*$/.test(v)) {
+                                            setFormData({ ...formData, name: v });
+                                        }
+                                    }} placeholder="Alex Johnson" />
+                                    <FormField label="Email" type="email" value={formData.email} onChange={v => setFormData({ ...formData, email: v })} placeholder="kasun@gmail.com" />
+                                </div>
+                                <div>
+                                    <FormField label="Phone Number" type="tel" value={formData.phoneNumber || ''} onChange={v => {
+                                        if (/^\d{0,10}$/.test(v)) {
+                                            setFormData({ ...formData, phoneNumber: v });
+                                        }
+                                    }} placeholder="077 123 4567" />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider">Message</label>

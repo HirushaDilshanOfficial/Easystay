@@ -45,7 +45,7 @@ const LoginForm = () => {
         <div className="glass-card p-10 w-full">
             {/* Header */}
             <div className="mb-8">
-                <Typography variant="overline" className="text-indigo-500 font-semibold tracking-widest">
+                <Typography variant="overline" className="text-blue-700 font-bold tracking-widest">
                     Welcome back
                 </Typography>
                 <Typography variant="h4" className="font-extrabold text-gray-900 mt-1">
@@ -74,6 +74,7 @@ const LoginForm = () => {
                     variant="outlined"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. john@example.com"
                     required
                     sx={{
                         '& .MuiOutlinedInput-root': {
@@ -84,7 +85,7 @@ const LoginForm = () => {
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
-                                <EmailIcon sx={{ color: '#6366f1' }} fontSize="small" />
+                                <EmailIcon sx={{ color: '#1d4ed8' }} fontSize="small" />
                             </InputAdornment>
                         ),
                     }}
@@ -97,6 +98,7 @@ const LoginForm = () => {
                     variant="outlined"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
                     required
                     sx={{
                         '& .MuiOutlinedInput-root': {
@@ -107,7 +109,7 @@ const LoginForm = () => {
                     InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
-                                <LockIcon sx={{ color: '#6366f1' }} fontSize="small" />
+                                <LockIcon sx={{ color: '#1d4ed8' }} fontSize="small" />
                             </InputAdornment>
                         ),
                         endAdornment: (
@@ -122,7 +124,7 @@ const LoginForm = () => {
 
                 <div className="flex justify-end">
                     <span
-                        className="text-sm text-indigo-600 cursor-pointer hover:underline font-medium"
+                        className="text-sm text-blue-700 cursor-pointer hover:underline font-medium"
                         onClick={() => navigate('/forgot-password')}
                     >
                         Forgot password?
@@ -132,7 +134,7 @@ const LoginForm = () => {
                 <button
                     type="submit"
                     disabled={loading}
-                    className="gradient-btn w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-2 mt-2 disabled:opacity-60 disabled:cursor-not-allowed bg-blue-700 hover:bg-blue-800 shadow-lg transition-all"
                 >
                     {loading ? (
                         <CircularProgress size={22} sx={{ color: 'white' }} />
@@ -152,7 +154,7 @@ const LoginForm = () => {
                 <Typography variant="body2" className="text-center text-gray-600">
                     Don't have an account?{' '}
                     <span
-                        className="text-indigo-600 font-bold cursor-pointer hover:underline"
+                        className="text-blue-700 font-bold cursor-pointer hover:underline"
                         onClick={() => navigate('/signup')}
                     >
                         Create one free →

@@ -2,7 +2,7 @@ const sendEmail = require('../utils/emailService');
 
 exports.submitContactForm = async (req, res, next) => {
     try {
-        const { name, email, message } = req.body;
+        const { name, email, phoneNumber, message } = req.body;
 
         if (!name || !email || !message) {
             return res.status(400).json({ success: false, message: 'Please provide all fields: name, email, message' });
@@ -31,6 +31,10 @@ exports.submitContactForm = async (req, res, next) => {
                                 <tr>
                                     <td style="padding: 8px 0; color: #64748b; font-weight: 600; font-size: 14px;">Email:</td>
                                     <td style="padding: 8px 0; font-size: 14px;"><a href="mailto:${email}" style="color: #2563eb; text-decoration: none; font-weight: 500;">${email}</a></td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 8px 0; color: #64748b; font-weight: 600; font-size: 14px;">Phone:</td>
+                                    <td style="padding: 8px 0; color: #0f172a; font-weight: 500; font-size: 14px;">${phoneNumber || 'Not provided'}</td>
                                 </tr>
                             </table>
                         </div>

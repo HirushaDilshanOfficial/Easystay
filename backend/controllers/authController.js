@@ -8,9 +8,7 @@ const {
 const sendEmail = require('../utils/emailService');
 const crypto = require('crypto');
 
-// @desc    Register a new user (Student or BoardingOwner only)
-// @route   POST /api/auth/signup
-// @access  Public
+
 exports.signup = async (req, res, next) => {
     try {
         const { name, email, password, role, phoneNumber, address } = req.body;
@@ -201,9 +199,7 @@ exports.login = async (req, res, next) => {
     }
 };
 
-// @desc    Verify OTP
-// @route   POST /api/auth/verify-otp
-// @access  Public
+
 exports.verifyOTP = async (req, res, next) => {
     try {
         const { email, otp } = req.body;
@@ -241,9 +237,7 @@ exports.verifyOTP = async (req, res, next) => {
     }
 };
 
-// @desc    Resend OTP
-// @route   POST /api/auth/resend-otp
-// @access  Public
+
 exports.resendOTP = async (req, res, next) => {
     try {
         const { email } = req.body;
@@ -300,9 +294,7 @@ exports.resendOTP = async (req, res, next) => {
     }
 };
 
-// @desc    Forgot Password - Send OTP
-// @route   POST /api/auth/forgot-password
-// @access  Public
+
 exports.forgotPassword = async (req, res, next) => {
     try {
         const { email } = req.body;
@@ -362,9 +354,7 @@ exports.forgotPassword = async (req, res, next) => {
     }
 };
 
-// @desc    Reset Password
-// @route   POST /api/auth/reset-password
-// @access  Public
+
 exports.resetPassword = async (req, res, next) => {
     try {
         const { email, otp, newPassword } = req.body;
@@ -402,6 +392,21 @@ exports.resetPassword = async (req, res, next) => {
     }
 };
 
+// @desc    Get current logged in user
+// @route   GET /api/auth/me
+// @access  Private
+exports.getMe = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (err) {
+        next(err);
+    }
+};
+
 // Helper: create JWT and send response
 const sendTokenResponse = (user, statusCode, res) => {
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, {
@@ -420,6 +425,7 @@ const sendTokenResponse = (user, statusCode, res) => {
             phoneNumber: user.phoneNumber,
             address: user.address,
             facePhoto: user.facePhoto,
+            loyaltyPoints: user.loyaltyPoints,
             createdAt: user.createdAt
         }
     });

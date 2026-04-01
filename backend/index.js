@@ -11,21 +11,26 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const contactRoutes = require('./routes/contactRoutes');
+const boardingRoutes = require('./routes/BoardingRoutes');
+const appointmentRoutes = require('./routes/AppointmentRoutes');
+const tenancyRoutes = require('./routes/TenancyRoutes');
+const paymentRoutes = require('./routes/PaymentRoutes');
+const advertisementRoutes = require('./routes/AdvertisementRoutes');
 
 // Connect to database, then seed admin
 connectDB().then(() => seedAdmin());
 
 const app = express();
 
-// Body parser
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Enable CORS
+// Enable CORS - allow all origins with credentials
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: true,
     credentials: true
 }));
+
+// Body parser with increased limit for base64 images
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Root route for health check
 app.get('/', (req, res) => {
@@ -35,10 +40,15 @@ app.get('/', (req, res) => {
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Mount routers
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/contact', contactRoutes);
+app.use('/api/boardings', boardingRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/tenancy', tenancyRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/advertisements', advertisementRoutes);
 
 // Error handler
 app.use(errorHandler);

@@ -101,6 +101,7 @@ const ResetPassword = () => {
                             variant="outlined"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
+                            placeholder="e.g. john@example.com"
                             required
                             sx={inputSx}
                             InputProps={{
@@ -138,7 +139,9 @@ const ResetPassword = () => {
                             variant="outlined"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Enter new password"
                             required
+                            helperText="Min 6 chars, 1 uppercase, 1 number, 1 special character"
                             sx={inputSx}
                             InputProps={{
                                 startAdornment: (
@@ -163,6 +166,7 @@ const ResetPassword = () => {
                             variant="outlined"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Confirm new password"
                             required
                             sx={inputSx}
                             InputProps={{

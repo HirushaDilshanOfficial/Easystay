@@ -32,26 +32,29 @@ import {
     EditOutlined as EditIcon,
     DeleteOutline as DeleteIcon,
     ReportProblemOutlined as WarningIcon,
-    PictureAsPdf as PdfIcon
+    PictureAsPdf as PdfIcon,
+    NoteAddOutlined as NewBoardIcon,
+    Campaign as AdIcon
 } from '@mui/icons-material';
+import AdAdmin from './AdAdmin';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
-    AreaChart, Area, XAxis, YAxis, Tooltip as RechartTooltip, ResponsiveContainer, CartesianGrid,
+    XAxis, YAxis, Tooltip as RechartTooltip, ResponsiveContainer, CartesianGrid,
     BarChart, Bar, Cell
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import authService from '../services/authService';
 import userService from '../services/userService';
+import api from '../api';
 
-// ─────────────────────────────────────────────
-//  Constants
-// ─────────────────────────────────────────────
 const NAV_ITEMS = [
     { icon: DashboardIcon, label: 'Dashboard', id: 'dashboard' },
     { icon: PeopleIcon, label: 'Users', id: 'users' },
     { icon: HomeIcon, label: 'Boardings', id: 'boardings' },
+    { icon: NewBoardIcon, label: 'New Boardings', id: 'newBoardings' },
+    { icon: AdIcon, label: 'Advertisements', id: 'advertisements' },
     { icon: ApproveIcon, label: 'Approvals', id: 'approvals' },
 ];
 
@@ -62,9 +65,12 @@ const DUMMY_CHART_DATA = [
     { name: 'Jul', users: 18 },
 ];
 
-// ─────────────────────────────────────────────
-//  Counter animation hook
-// ─────────────────────────────────────────────
+const getDocUrl = (path) => {
+    if (!path) return '';
+    return path.startsWith('http') ? path : `http://localhost:5001/uploads/${path}`;
+};
+
+
 function useCountUp(target, duration = 1200) {
     const [count, setCount] = useState(0);
     useEffect(() => {
@@ -81,9 +87,7 @@ function useCountUp(target, duration = 1200) {
     return count;
 }
 
-// ─────────────────────────────────────────────
-//  Stat Card
-// ─────────────────────────────────────────────
+
 function StatCard({ label, value, icon: Icon, accent, delay = 0, darkMode }) {
     const count = useCountUp(value);
     return (
@@ -122,9 +126,7 @@ function StatCard({ label, value, icon: Icon, accent, delay = 0, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Loading Skeleton Row
-// ─────────────────────────────────────────────
+
 function SkeletonRow() {
     return (
         <tr>
@@ -137,9 +139,7 @@ function SkeletonRow() {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Custom Chart Tooltip
-// ─────────────────────────────────────────────
+
 function ChartTooltip({ active, payload, label, darkMode }) {
     if (!active || !payload?.length) return null;
     return (
@@ -161,9 +161,7 @@ function ChartTooltip({ active, payload, label, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  User Detail Modal
-// ─────────────────────────────────────────────
+
 function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
     if (!u) return null;
     const modalBg = darkMode ? 'rgba(15,18,26,0.97)' : 'rgba(248,250,252,0.97)';
@@ -235,8 +233,12 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
                     {/* Info */}
                     <div className="px-6 py-2">
                         <InfoRow icon={EmailIcon} label="Email" value={u.email} color="#6366f1" />
-                        <InfoRow icon={PhoneIcon} label="Phone Number" value={u.phoneNumber} color="#06b6d4" />
-                        <InfoRow icon={LocationIcon} label="Address" value={u.address} color="#10b981" />
+                        {u.role === 'BoardingOwner' && (
+                            <>
+                                <InfoRow icon={PhoneIcon} label="Phone Number" value={u.phoneNumber} color="#06b6d4" />
+                                <InfoRow icon={LocationIcon} label="Address" value={u.address} color="#10b981" />
+                            </>
+                        )}
                         <InfoRow icon={PersonIcon} label="Status" value={u.status} color={
                             u.status === 'Active' ? '#34d399' : u.status === 'Pending' ? '#fbbf24' : '#f87171'
                         } />
@@ -249,7 +251,7 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
                             <p className="text-[10px] font-black uppercase tracking-widest mt-4 mb-3" style={{ color: sub }}>Uploaded Documents</p>
                             <div className="grid grid-cols-2 gap-3">
                                 {u.nicPhoto && (
-                                    <a href={u.nicPhoto} target="_blank" rel="noreferrer"
+                                    <a href={getDocUrl(u.nicPhoto)} target="_blank" rel="noreferrer"
                                         className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all hover:scale-[1.03]"
                                         style={{ background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', textDecoration: 'none' }}>
                                         <NicIcon sx={{ fontSize: 28, color: '#818cf8' }} />
@@ -257,7 +259,7 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
                                     </a>
                                 )}
                                 {u.facePhoto && (
-                                    <a href={u.facePhoto} target="_blank" rel="noreferrer"
+                                    <a href={getDocUrl(u.facePhoto)} target="_blank" rel="noreferrer"
                                         className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all hover:scale-[1.03]"
                                         style={{ background: 'rgba(6,182,212,0.1)', border: '1px solid rgba(6,182,212,0.2)', textDecoration: 'none' }}>
                                         <FacePhotoIcon sx={{ fontSize: 28, color: '#22d3ee' }} />
@@ -265,7 +267,7 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
                                     </a>
                                 )}
                                 {u.boardingDocuments?.map((doc, idx) => (
-                                    <a key={idx} href={doc} target="_blank" rel="noreferrer"
+                                    <a key={idx} href={getDocUrl(doc)} target="_blank" rel="noreferrer"
                                         className="flex flex-col items-center gap-2 p-4 rounded-xl transition-all hover:scale-[1.03]"
                                         style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', textDecoration: 'none' }}>
                                         <FolderIcon sx={{ fontSize: 28, color: '#fbbf24' }} />
@@ -306,9 +308,7 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  User Edit Modal
-// ─────────────────────────────────────────────
+
 function UserEditModal({ user: u, onClose, onSave, darkMode }) {
     const [formData, setFormData] = useState({
         name: u?.name || '',
@@ -409,29 +409,33 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
                                 required
                             />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Phone Number</label>
-                            <input
-                                type="text"
-                                value={formData.phoneNumber}
-                                onChange={(e) => {
-                                    if (/^\d{0,10}$/.test(e.target.value)) {
-                                        setFormData({ ...formData, phoneNumber: e.target.value });
-                                    }
-                                }}
-                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
-                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
-                            />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Property Address</label>
-                            <textarea
-                                value={formData.address}
-                                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                                className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all min-h-[80px]"
-                                style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
-                            />
-                        </div>
+                        {u.role === 'BoardingOwner' && (
+                            <>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Phone Number</label>
+                                    <input
+                                        type="text"
+                                        value={formData.phoneNumber}
+                                        onChange={(e) => {
+                                            if (/^\d{0,10}$/.test(e.target.value)) {
+                                                setFormData({ ...formData, phoneNumber: e.target.value });
+                                            }
+                                        }}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                        style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: sub }}>Property Address</label>
+                                    <textarea
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all min-h-[80px]"
+                                        style={{ background: inputBg, border: `1px solid ${border}`, color: text }}
+                                    />
+                                </div>
+                            </>
+                        )}
 
                         {u.role === 'BoardingOwner' && (
                             <div className="space-y-1.5">
@@ -465,9 +469,9 @@ function UserEditModal({ user: u, onClose, onSave, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
+
 //  Approval Confirmation Modal
-// ─────────────────────────────────────────────
+
 function ApproveConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     if (!u) return null;
     const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
@@ -526,9 +530,7 @@ function ApproveConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Rejection Reason Modal
-// ─────────────────────────────────────────────
+
 function RejectReasonModal({ user: u, onClose, onConfirm, darkMode }) {
     const [reason, setReason] = useState('');
     if (!u) return null;
@@ -604,9 +606,160 @@ function RejectReasonModal({ user: u, onClose, onConfirm, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Recent Activity Item
-// ─────────────────────────────────────────────
+
+function ApproveBoardingModal({ boarding: b, onClose, onConfirm, darkMode }) {
+    const defaultMsg = b ? `Hello ${b.ownerName},\n\nGood news! Your boarding listing "${b.title}" has been approved by the admin and is now live on EasyStay.\n\nThank you for using our platform.` : '';
+    const [message, setMessage] = useState('');
+    
+    useEffect(() => {
+        if (b) setMessage(defaultMsg);
+    }, [b]);
+
+    if (!b) return null;
+    const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
+    const border = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const text = darkMode ? '#f8fafc' : '#0f172a';
+    const sub = darkMode ? '#94a3b8' : '#64748b';
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)' }}
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ background: modalBg, border: `1px solid ${border}`, backdropFilter: 'blur(40px)' }}
+                >
+                    <div className="p-8">
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-6 border border-emerald-500/20">
+                            <ApproveIcon sx={{ fontSize: 32, color: '#10b981' }} />
+                        </div>
+                        <h2 className="text-xl font-black mb-1" style={{ color: text }}>Approve Boarding</h2>
+                        <p className="text-sm font-medium mb-6 leading-relaxed" style={{ color: sub }}>
+                            Customize the approval email sent to <span className="font-bold text-emerald-400">{b.ownerName}</span>.
+                        </p>
+
+                        <div className="mb-8">
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: sub }}>Email Message</label>
+                            <textarea
+                                value={message}
+                                onChange={(e) => setMessage(e.target.value)}
+                                className="w-full px-4 py-3 rounded-2xl outline-none transition-all duration-200 min-h-[140px] resize-none text-sm font-medium"
+                                style={{
+                                    background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    border: `1px solid ${border}`,
+                                    color: text
+                                }}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={onClose}
+                                className="py-3 rounded-2xl font-bold text-sm transition-all"
+                                style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', color: text, border: `1px solid ${border}` }}
+                            >
+                                Cancel
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={() => onConfirm(b._id, message)}
+                                className="py-3 rounded-2xl font-bold text-sm text-white shadow-lg shadow-emerald-500/20 transition-all"
+                                style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}
+                            >
+                                Approve & Send
+                            </motion.button>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
+function RejectBoardingModal({ boarding: b, onClose, onConfirm, darkMode }) {
+    const [reason, setReason] = useState('');
+    if (!b) return null;
+
+    const modalBg = darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)';
+    const border = darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+    const text = darkMode ? '#f8fafc' : '#0f172a';
+    const sub = darkMode ? '#94a3b8' : '#64748b';
+
+    return (
+        <AnimatePresence>
+            <motion.div
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)' }}
+                onClick={onClose}
+            >
+                <motion.div
+                    initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={e => e.stopPropagation()}
+                    className="w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+                    style={{ background: modalBg, border: `1px solid ${border}`, backdropFilter: 'blur(40px)' }}
+                >
+                    <div className="p-8">
+                        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6 border border-red-500/20">
+                            <RejectIcon sx={{ fontSize: 32, color: '#f87171' }} />
+                        </div>
+                        <h2 className="text-xl font-black mb-1" style={{ color: text }}>Reject Boarding</h2>
+                        <p className="text-sm font-medium mb-6 leading-relaxed" style={{ color: sub }}>
+                            Please provide a reason for rejecting the boarding <span className="font-bold text-red-400">"{b.title}"</span>.
+                        </p>
+
+                        <div className="mb-8">
+                            <label className="block text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: sub }}>Rejection Reason (Sent in Email)</label>
+                            <textarea
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder="e.g., Photos are blurry, price is unrealistic..."
+                                className="w-full px-4 py-3 rounded-2xl outline-none transition-all duration-200 min-h-[120px] resize-none text-sm font-medium"
+                                style={{
+                                    background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                                    border: `1px solid ${border}`,
+                                    color: text
+                                }}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                onClick={onClose}
+                                className="py-3 rounded-2xl font-bold text-sm transition-all"
+                                style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', color: text, border: `1px solid ${border}` }}
+                            >
+                                Cancel
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                disabled={!reason.trim()}
+                                onClick={() => onConfirm(b._id, reason)}
+                                className="py-3 rounded-2xl font-bold text-sm text-white shadow-lg shadow-red-500/20 transition-all disabled:opacity-50"
+                                style={{ background: 'linear-gradient(135deg,#f87171,#ef4444)' }}
+                            >
+                                Reject & Send
+                            </motion.button>
+                        </div>
+                    </div>
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
+    );
+}
+
 function ActivityItem({ activity, cardBorder, textPrimary, textSecondary, darkMode }) {
     const isNew = (new Date() - new Date(activity.createdAt)) < 24 * 60 * 60 * 1000;
 
@@ -664,9 +817,7 @@ function ActivityItem({ activity, cardBorder, textPrimary, textSecondary, darkMo
     );
 }
 
-// ─────────────────────────────────────────────
-//  Delete Confirmation Modal
-// ─────────────────────────────────────────────
+
 function DeleteConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     if (!u) return null;
 
@@ -726,17 +877,21 @@ function DeleteConfirmationModal({ user: u, onClose, onConfirm, darkMode }) {
     );
 }
 
-// ─────────────────────────────────────────────
-//  Main Component
-// ─────────────────────────────────────────────
+
 const AdminDashboard = () => {
     const navigate = useNavigate();
     const userData = authService.getCurrentUser();
     const { user } = userData || {};
 
-    const [stats, setStats] = useState(null);
-    const [users, setUsers] = useState([]);
+    const [boardings, setBoardings] = useState([]);
+    const [boardingSearchTerm, setBoardingSearchTerm] = useState('');
+    const [boardingStatusFilter, setBoardingStatusFilter] = useState('All');
+    const [boardingTypeFilter, setBoardingTypeFilter] = useState('All');
+    const [selectedBoardingEdit, setSelectedBoardingEdit] = useState(null);
+    const [boardingToDelete, setBoardingToDelete] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [users, setUsers] = useState([]);
+    const [stats, setStats] = useState(null);
     const [sidebarOpen, setSidebarOpen] = useState(true);
     // Force light mode on this specific deployment to break out of old cached dark mode state
     const [darkMode, setDarkMode] = useState(() => {
@@ -762,6 +917,9 @@ const AdminDashboard = () => {
     const [userToDelete, setUserToDelete] = useState(null);
     const [userToApprove, setUserToApprove] = useState(null);
     const [userToReject, setUserToReject] = useState(null);
+    const [boardingToApprove, setBoardingToApprove] = useState(null);
+    const [boardingToReject, setBoardingToReject] = useState(null);
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
@@ -770,13 +928,15 @@ const AdminDashboard = () => {
 
     useEffect(() => {
         loadAdminData();
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        return () => clearInterval(timer);
     }, []);
 
     useEffect(() => {
         localStorage.setItem('theme', darkMode ? 'dark' : 'light');
     }, [darkMode]);
 
-    // Filtering logic
+        // Filter users
     const filteredUsers = users.filter(u => {
         const matchesSearch = (u.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             u.email?.toLowerCase().includes(searchTerm.toLowerCase()));
@@ -785,12 +945,38 @@ const AdminDashboard = () => {
         return matchesSearch && matchesRole && matchesStatus;
     });
 
+    // Filter boardings
+    const filteredBoardings = boardings.filter(b => {
+        const matchesSearch = (b.title?.toLowerCase().includes(boardingSearchTerm.toLowerCase()) ||
+            b.address?.toLowerCase().includes(boardingSearchTerm.toLowerCase()) || 
+            b.ownerName?.toLowerCase().includes(boardingSearchTerm.toLowerCase()));
+        
+        let matchesStatus = true;
+        if (boardingStatusFilter === 'Active') matchesStatus = b.availability === true;
+        if (boardingStatusFilter === 'Inactive') matchesStatus = b.availability === false;
+
+        let matchesType = true;
+        if (boardingTypeFilter !== 'All') matchesType = b.roomType === boardingTypeFilter;
+        
+        // Only show approved boardings in the main tab
+        const isApproved = b.isApproved !== false; 
+        
+        return matchesSearch && matchesStatus && matchesType && isApproved;
+    });
+
+    const pendingBoardingsList = boardings.filter(b => b.isApproved === false);
+
     const loadAdminData = async () => {
         setLoading(true);
         try {
-            const [s, u] = await Promise.all([userService.getStats(), userService.getUsers()]);
+            const [s, u, bRes] = await Promise.all([
+                userService.getStats(), 
+                userService.getUsers(),
+                api.get('/boardings?adminView=true') // adminView=true returns ALL boardings for admin
+            ]);
             setStats(s.data);
             setUsers(u.data);
+            setBoardings(bRes.data.data || []);
         } catch {
             setSnackbar({ open: true, msg: 'Failed to load data.', severity: 'error' });
         } finally {
@@ -822,9 +1008,8 @@ const AdminDashboard = () => {
         const timestamp = new Date().toLocaleString();
 
         // Brand Header
-        doc.setFillColor(63, 81, 181); // Indigo color
+        doc.setFillColor(63, 81, 181);
         doc.rect(0, 0, 210, 40, 'F');
-
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
@@ -834,13 +1019,11 @@ const AdminDashboard = () => {
         doc.setFont('helvetica', 'normal');
         doc.text('Boarding Management System | Admin Report', 20, 30);
 
-        // Right-aligned Contact Info
         doc.setFontSize(8);
         doc.text('New Kandy Road, Malabe', 190, 18, { align: 'right' });
         doc.text('0772343423', 190, 24, { align: 'right' });
         doc.text('www.easystay.com', 190, 30, { align: 'right' });
 
-        // Report Title
         doc.setTextColor(33, 33, 33);
         doc.setFontSize(18);
         doc.setFont('helvetica', 'bold');
@@ -852,16 +1035,6 @@ const AdminDashboard = () => {
         doc.text(`Generated on: ${timestamp}`, 20, 62);
         doc.text(`Total Users in this view: ${filteredUsers.length}`, 20, 67);
 
-        // Filter info
-        if (roleFilter !== 'All' || statusFilter !== 'All' || searchTerm) {
-            let filterText = 'Active Filters: ';
-            if (roleFilter !== 'All') filterText += `Role: ${roleFilter} | `;
-            if (statusFilter !== 'All') filterText += `Status: ${statusFilter} | `;
-            if (searchTerm) filterText += `Search: "${searchTerm}"`;
-            doc.text(filterText, 20, 75);
-        }
-
-        // Table
         const tableData = filteredUsers.map(u => [
             u.name,
             u.email,
@@ -874,33 +1047,61 @@ const AdminDashboard = () => {
             startY: 85,
             head: [['Name', 'Email', 'Role', 'Status', 'Joined Date']],
             body: tableData,
-            headStyles: {
-                fillColor: [63, 81, 181],
-                textColor: [255, 255, 255],
-                fontSize: 10,
-                fontStyle: 'bold',
-                halign: 'left'
-            },
-            bodyStyles: {
-                fontSize: 9,
-                textColor: [51, 51, 51]
-            },
-            alternateRowStyles: {
-                fillColor: [245, 245, 250]
-            },
-            margin: { left: 20, right: 20 },
-            didDrawPage: (data) => {
-                // Footer
-                const str = 'Page ' + doc.internal.getNumberOfPages();
-                doc.setFontSize(8);
-                doc.setTextColor(150, 150, 150);
-                doc.text(str, data.settings.margin.left, doc.internal.pageSize.height - 10);
-                doc.text('© 2026 EasyStay - Confidential Administrator Document', 120, doc.internal.pageSize.height - 10);
-            }
+            headStyles: { fillColor: [63, 81, 181], textColor: [255, 255, 255], fontSize: 10, fontStyle: 'bold' },
+            bodyStyles: { fontSize: 9, textColor: [51, 51, 51] },
+            alternateRowStyles: { fillColor: [245, 245, 250] },
+            margin: { left: 20, right: 20 }
         });
 
-        doc.save(`EasyStay_Users_Report_${new Date().getTime()}.pdf`);
-        setSnackbar({ open: true, msg: 'PDF report generated successfully!', severity: 'success' });
+        doc.save(`EasyStay_Users_${new Date().getTime()}.pdf`);
+        setSnackbar({ open: true, msg: 'PDF report generated!', severity: 'success' });
+    };
+
+    const handleExportBoardingsPDF = () => {
+        const doc = new jsPDF();
+        const timestamp = new Date().toLocaleString();
+
+        doc.setFillColor(16, 185, 129); // Emerald color for boardings
+        doc.rect(0, 0, 210, 40, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(24);
+        doc.setFont('helvetica', 'bold');
+        doc.text('EasyStay', 20, 22);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Boarding Management System | Admin Report', 20, 30);
+
+        doc.setTextColor(33, 33, 33);
+        doc.setFontSize(18);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Active Boardings Report', 20, 55);
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Generated on: ${timestamp}`, 20, 62);
+        doc.text(`Total Boardings in this view: ${filteredBoardings.length}`, 20, 67);
+
+        const tableData = filteredBoardings.map(b => [
+            b.title,
+            `${b.pricePerMonth} LKR`,
+            b.address,
+            b.ownerName,
+            b.availability ? 'Active' : 'Inactive'
+        ]);
+
+        autoTable(doc, {
+            startY: 85,
+            head: [['Title', 'Price/Month', 'Location', 'Owner', 'Status']],
+            body: tableData,
+            headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontSize: 10 },
+            bodyStyles: { fontSize: 9 },
+            alternateRowStyles: { fillColor: [245, 250, 245] },
+            margin: { left: 20, right: 20 }
+        });
+
+        doc.save(`EasyStay_Boardings_${new Date().getTime()}.pdf`);
+        setSnackbar({ open: true, msg: 'Boardings PDF generated!', severity: 'success' });
     };
 
     const handleDeleteUser = async (id) => {
@@ -925,9 +1126,79 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleDeleteBoarding = async () => {
+        if (!boardingToDelete) return;
+        try {
+            await api.delete(`/boardings/delete/${boardingToDelete._id}`);
+            setSnackbar({ open: true, msg: 'Boarding deleted successfully.', severity: 'success' });
+            setBoardingToDelete(null);
+            loadAdminData();
+        } catch (err) {
+            setSnackbar({ open: true, msg: err.response?.data?.error || 'Failed to delete boarding.', severity: 'error' });
+        }
+    };
+
+    const handleToggleBoardingStatus = async (boarding) => {
+        try {
+            const formData = new FormData();
+            formData.append('availability', !boarding.availability);
+            await api.put(`/boardings/update/${boarding._id}`, formData);
+            setSnackbar({ open: true, msg: `Boarding marked as ${!boarding.availability ? 'Active' : 'Inactive'}.`, severity: 'success' });
+            loadAdminData();
+        } catch (err) {
+            setSnackbar({ open: true, msg: 'Failed to update boarding status.', severity: 'error' });
+        }
+    };
+
+    const handleSaveBoardingEdit = async (e) => {
+        e.preventDefault();
+        try {
+            const formData = new FormData();
+            formData.append('title', selectedBoardingEdit.title);
+            formData.append('pricePerMonth', selectedBoardingEdit.pricePerMonth);
+            formData.append('address', selectedBoardingEdit.address);
+            formData.append('description', selectedBoardingEdit.description || '');
+            formData.append('roomType', selectedBoardingEdit.roomType || '');
+            formData.append('genderType', selectedBoardingEdit.genderType || '');
+            formData.append('contactNumber', selectedBoardingEdit.contactNumber || '');
+            if (selectedBoardingEdit.distanceFromUniversity) {
+                formData.append('distanceFromUniversity', selectedBoardingEdit.distanceFromUniversity);
+            }
+            
+            await api.put(`/boardings/update/${selectedBoardingEdit._id}`, formData);
+            setSnackbar({ open: true, msg: 'Boarding details updated successfully!', severity: 'success' });
+            setSelectedBoardingEdit(null);
+            loadAdminData();
+        } catch (err) {
+            setSnackbar({ open: true, msg: 'Failed to update boarding.', severity: 'error' });
+        }
+    };
+
     const handleLogout = () => {
         authService.logout();
         navigate('/login');
+    };
+
+    const handleApproveBoardingWithMsg = async (id, message) => {
+        try {
+            await api.put(`/boardings/approve/${id}`, { message });
+            setSnackbar({ open: true, msg: 'Boarding approved effectively.', severity: 'success' });
+            setBoardingToApprove(null);
+            loadAdminData();
+        } catch (err) {
+            setSnackbar({ open: true, msg: 'Failed to approve boarding.', severity: 'error' });
+        }
+    };
+
+    const handleRejectBoardingWithMsg = async (id, reason) => {
+        try {
+            await api.put(`/boardings/reject/${id}`, { reason });
+            setSnackbar({ open: true, msg: 'Boarding rejected securely.', severity: 'success' });
+            setBoardingToReject(null);
+            loadAdminData();
+        } catch (err) {
+            setSnackbar({ open: true, msg: 'Failed to reject boarding.', severity: 'error' });
+        }
     };
 
     const pendingOwners = users.filter(u => u.role === 'BoardingOwner' && u.status === 'Pending');
@@ -966,7 +1237,7 @@ const AdminDashboard = () => {
                     {/* Logo */}
                     <div className="flex items-center gap-3 px-5 py-5 shrink-0">
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 shadow-lg"
-                            style={{ background: 'linear-gradient(135deg, #4f46e5, #ec4899)' }}>
+                            style={{ background: 'linear-gradient(135deg, #2563eb, #60a5fa)' }}>
                             <HomeIcon style={{ color: '#fff', fontSize: 18 }} />
                         </div>
                         <AnimatePresence>
@@ -975,7 +1246,7 @@ const AdminDashboard = () => {
                                     initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
                                     exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.2 }}
                                     className="font-black text-lg"
-                                    style={{ background: 'linear-gradient(90deg, #4f46e5, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+                                    style={{ background: 'linear-gradient(90deg, #2563eb, #60a5fa)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
                                 >EasyStay</motion.span>
                             )}
                         </AnimatePresence>
@@ -994,19 +1265,19 @@ const AdminDashboard = () => {
                                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left relative"
                                     style={{
                                         background: isActive
-                                            ? (darkMode ? 'linear-gradient(135deg, rgba(99,102,241,0.2), rgba(6,182,212,0.15))' : 'linear-gradient(135deg, #ebf4ff, #e0e7ff)')
+                                            ? (darkMode ? 'linear-gradient(135deg, rgba(37,99,235,0.2), rgba(96,165,250,0.15))' : 'linear-gradient(135deg, #eff6ff, #dbeafe)')
                                             : 'transparent',
                                         border: isActive
-                                            ? (darkMode ? '1px solid rgba(99,102,241,0.3)' : '1px solid #c7d2fe')
+                                            ? (darkMode ? '1px solid rgba(37,99,235,0.3)' : '1px solid #bfdbfe')
                                             : '1px solid transparent',
-                                        color: isActive ? (darkMode ? '#818cf8' : '#4338ca') : textSecondary,
+                                        color: isActive ? (darkMode ? '#60a5fa' : '#2563eb') : textSecondary,
                                         minWidth: 0,
                                     }}
                                 >
                                     {isActive && (
                                         <motion.div layoutId="activeStrip"
                                             className="absolute left-0 top-2 bottom-2 w-1 rounded-full shadow-md"
-                                            style={{ background: 'linear-gradient(180deg,#4f46e5,#ec4899)' }}
+                                            style={{ background: 'linear-gradient(180deg,#2563eb,#60a5fa)' }}
                                         />
                                     )}
                                     <Icon fontSize="small" className="shrink-0" />
@@ -1021,6 +1292,11 @@ const AdminDashboard = () => {
                                     {id === 'approvals' && pendingOwners.length > 0 && (
                                         <span className="ml-auto bg-amber-500 text-black text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center shrink-0">
                                             {pendingOwners.length}
+                                        </span>
+                                    )}
+                                    {id === 'newBoardings' && pendingBoardingsList.length > 0 && (
+                                        <span className="ml-auto bg-blue-500 text-white text-[10px] font-black rounded-full w-5 h-5 flex items-center justify-center shrink-0">
+                                            {pendingBoardingsList.length}
                                         </span>
                                     )}
                                 </motion.button>
@@ -1113,22 +1389,36 @@ const AdminDashboard = () => {
                     {activeNav === 'dashboard' && (
                         <motion.div key="dashboard" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
 
-                            {/* Welcome */}
-                            <div>
-                                <h1 className="text-2xl font-black" style={{ color: textPrimary }}>
-                                    Welcome back, <span style={{ background: darkMode ? 'linear-gradient(90deg, #818cf8, #c084fc)' : 'linear-gradient(90deg, #4338ca, #c026d3)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{adminName}</span> 👋
-                                </h1>
-                                <p className="text-sm mt-1" style={{ color: textSecondary }}>Here's what's happening in your system today.</p>
+                            {/* Welcome Banner */}
+                            <div className="relative overflow-hidden rounded-3xl p-8 shadow-lg border" style={{ borderColor: cardBorder, background: darkMode ? 'linear-gradient(135deg, #0f172a, #1e3a8a)' : 'linear-gradient(135deg, #2563eb, #3b82f6)' }}>
+                                <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-white opacity-10 rounded-full blur-3xl"></div>
+                                <div className="absolute bottom-0 left-20 w-32 h-32 bg-blue-300 opacity-20 rounded-full blur-2xl"></div>
+                                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4 text-white">
+                                    <div>
+                                        <h1 className="text-3xl font-black mb-2 tracking-tight">
+                                            Welcome back, <span className="text-blue-100">{adminName}</span> 👋
+                                        </h1>
+                                        <p className="text-blue-50 text-sm font-medium max-w-lg leading-relaxed">System overview and analytics at a glance. You have pending approvals requiring your attention today.</p>
+                                    </div>
+                                    <div className="flex flex-col items-start md:items-end bg-white/10 px-6 py-4 rounded-2xl backdrop-blur-sm border border-white/20">
+                                        <p className="text-3xl font-black tracking-widest bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">
+                                            {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </p>
+                                        <p className="text-sm font-bold text-blue-100 mt-1 uppercase tracking-widest">
+                                            {currentTime.toLocaleDateString([], { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* STAT CARDS */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
                                 <StatCard label="Total Users" value={stats?.totalUsers} icon={PeopleIcon}
-                                    accent="linear-gradient(135deg,#6366f1,#818cf8)" delay={0} darkMode={darkMode} />
+                                    accent="linear-gradient(135deg,#2563eb,#60a5fa)" delay={0} darkMode={darkMode} />
                                 <StatCard label="Pending Approvals" value={stats?.pendingOwners} icon={TimeIcon}
                                     accent="linear-gradient(135deg,#f59e0b,#fbbf24)" delay={0.08} darkMode={darkMode} />
                                 <StatCard label="Active Owners" value={stats?.activeOwners} icon={HomeIcon}
-                                    accent="linear-gradient(135deg,#06b6d4,#22d3ee)" delay={0.16} darkMode={darkMode} />
+                                    accent="linear-gradient(135deg,#0ea5e9,#38bdf8)" delay={0.16} darkMode={darkMode} />
                                 <StatCard label="Students" value={stats?.totalStudents} icon={PersonIcon}
                                     accent="linear-gradient(135deg,#10b981,#34d399)" delay={0.24} darkMode={darkMode} />
                             </div>
@@ -1149,15 +1439,15 @@ const AdminDashboard = () => {
                                     </div>
 
                                     <div className="flex items-center gap-4">
-                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-indigo-500/5 border border-indigo-500/10">
-                                            <p className="text-[10px] font-black text-indigo-500 tracking-tighter flex items-center gap-1">
+                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-blue-500/5 border border-blue-500/10 hover:bg-blue-500/10 transition-colors">
+                                            <p className="text-[10px] font-black text-blue-600 tracking-tighter flex items-center gap-1">
                                                 <TrendIcon sx={{ fontSize: 12 }} /> +12.5%
                                             </p>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Growth</p>
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase">Growth</p>
                                         </div>
-                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-pink-500/5 border border-pink-500/10">
-                                            <p className="text-[11px] font-black text-pink-500">Feb</p>
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase">Current</p>
+                                        <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-indigo-500/5 border border-indigo-500/10 hover:bg-indigo-500/10 transition-colors">
+                                            <p className="text-[11px] font-black text-indigo-500">Feb</p>
+                                            <p className="text-[9px] font-bold text-gray-500 uppercase">Current</p>
                                         </div>
                                         <div className="flex flex-col items-center px-4 py-2 rounded-2xl bg-emerald-500/5 border border-emerald-500/10">
                                             <p className="text-[11px] font-black text-emerald-500">7 users</p>
@@ -1194,7 +1484,7 @@ const AdminDashboard = () => {
                                                 {(stats?.growthData?.length > 0 ? stats.growthData : DUMMY_CHART_DATA).map((entry, index) => (
                                                     <Cell
                                                         key={`cell-${index}`}
-                                                        fill={entry.name === 'Feb' ? '#6366f1' : (darkMode ? 'rgba(255,255,255,0.05)' : '#f1f5f9')}
+                                                        fill={entry.name === 'Feb' ? '#2563eb' : (darkMode ? 'rgba(255,255,255,0.05)' : '#e2e8f0')}
                                                     />
                                                 ))}
                                             </Bar>
@@ -1209,8 +1499,8 @@ const AdminDashboard = () => {
                                     className="lg:col-span-2 rounded-2xl overflow-hidden"
                                     style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
                                     <div className="px-6 py-5 border-b flex items-center justify-between" style={{ borderColor: cardBorder }}>
-                                        <h2 className="text-sm font-bold" style={{ color: textPrimary }}>Recent Activity</h2>
-                                        <button className="text-[10px] font-black uppercase tracking-wider text-indigo-400 hover:text-indigo-300 transition-colors">View All</button>
+                                        <h2 className="text-base font-black px-2 py-1 rounded-md bg-white border border-gray-100 shadow-sm" style={{ color: textPrimary }}>Recent Activity</h2>
+                                        <button className="text-[10px] font-black uppercase tracking-wider text-blue-600 hover:text-blue-500 transition-colors bg-blue-50 px-3 py-1.5 rounded-lg">View All</button>
                                     </div>
                                     <div className="divide-y divide-white/5">
                                         {stats?.recentActivity?.length > 0 ? (
@@ -1231,17 +1521,17 @@ const AdminDashboard = () => {
                                 </motion.div>
 
                                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.48, duration: 0.4 }}
-                                    className="rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4"
-                                    style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(6,182,212,0.1))', border: `1px solid ${cardBorder}` }}>
-                                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2" style={{ background: 'rgba(99,102,241,0.2)' }}>
-                                        <DocIcon sx={{ fontSize: 32, color: '#818cf8' }} />
+                                    className="rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4 shadow-sm"
+                                    style={{ background: 'linear-gradient(135deg, rgba(37,99,235,0.05), rgba(96,165,250,0.1))', border: `1px solid ${cardBorder}` }}>
+                                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-2 shadow-inner" style={{ background: 'rgba(37,99,235,0.1)' }}>
+                                        <DocIcon sx={{ fontSize: 32, color: '#2563eb' }} />
                                     </div>
-                                    <h3 className="text-sm font-bold" style={{ color: textPrimary }}>Quick Reports</h3>
-                                    <p className="text-[11px]" style={{ color: textSecondary }}>Download your monthly system audit and user logs in PDF format.</p>
+                                    <h3 className="text-base font-black" style={{ color: textPrimary }}>Quick Reports</h3>
+                                    <p className="text-xs font-medium" style={{ color: textSecondary }}>Download your monthly system audit and user logs in PDF format.</p>
                                     <motion.button
                                         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                         onClick={handleExportPDF}
-                                        className="mt-2 px-6 py-2.5 rounded-xl text-xs font-black bg-indigo-500 text-white shadow-lg shadow-indigo-500/30">
+                                        className="mt-2 px-8 py-3 rounded-xl text-xs font-black bg-blue-600 hover:bg-blue-700 transition-colors text-white shadow-lg shadow-blue-500/30">
                                         Generate Audit
                                     </motion.button>
                                 </motion.div>
@@ -1298,21 +1588,21 @@ const AdminDashboard = () => {
                                                             <div className="flex items-center gap-1">
                                                                 {row.nicPhoto && (
                                                                     <Tooltip title="View NIC Photo">
-                                                                        <IconButton size="small" component="a" href={row.nicPhoto} target="_blank" sx={{ color: '#818cf8' }}>
+                                                                        <IconButton size="small" component="a" href={getDocUrl(row.nicPhoto)} target="_blank" sx={{ color: '#818cf8' }}>
                                                                             <ViewIcon sx={{ fontSize: 16 }} />
                                                                         </IconButton>
                                                                     </Tooltip>
                                                                 )}
                                                                 {row.facePhoto && (
                                                                     <Tooltip title="View Face Photo">
-                                                                        <IconButton size="small" component="a" href={row.facePhoto} target="_blank" sx={{ color: '#22d3ee' }}>
+                                                                        <IconButton size="small" component="a" href={getDocUrl(row.facePhoto)} target="_blank" sx={{ color: '#22d3ee' }}>
                                                                             <ViewIcon sx={{ fontSize: 16 }} />
                                                                         </IconButton>
                                                                     </Tooltip>
                                                                 )}
                                                                 {row.boardingDocuments?.map((doc, idx) => (
                                                                     <Tooltip key={idx} title={`Boarding Doc ${idx + 1}`}>
-                                                                        <IconButton size="small" component="a" href={doc} target="_blank" sx={{ color: '#fbbf24' }}>
+                                                                        <IconButton size="small" component="a" href={getDocUrl(doc)} target="_blank" sx={{ color: '#fbbf24' }}>
                                                                             <DocIcon sx={{ fontSize: 16 }} />
                                                                         </IconButton>
                                                                     </Tooltip>
@@ -1555,6 +1845,120 @@ const AdminDashboard = () => {
                         </motion.div>
                     )}
 
+                    {activeNav === 'newBoardings' && (
+                        <motion.div key="newBoardings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+
+                            {/* Section Title */}
+                            <div>
+                                <h1 className="text-2xl font-black" style={{ color: textPrimary }}>New Boarding Approvals</h1>
+                                <p className="text-sm mt-1" style={{ color: textSecondary }}>Review and manage pending new boarding listings.</p>
+                            </div>
+
+                            {/* PENDING BOARDINGS TABLE */}
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
+                                className="rounded-2xl overflow-hidden shadow-xl"
+                                style={{ background: cardBg, border: `1px solid rgba(59,130,246,0.25)`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(59,130,246,0.08)' }}>
+                                <div className="flex items-center justify-between px-6 py-4 border-b"
+                                    style={{ borderColor: 'rgba(59,130,246,0.15)' }}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+                                        <h2 className="text-sm font-bold" style={{ color: textPrimary }}>Pending Boardings ({pendingBoardingsList.length})</h2>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr style={{ borderBottom: `1px solid ${cardBorder}` }}>
+                                                {['Boarding Info', 'Location & Price', 'Owner Details', 'Documents', 'Actions'].map(h => (
+                                                    <th key={h} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest"
+                                                        style={{ color: textSecondary }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {pendingBoardingsList.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="5" className="px-5 py-20 text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="w-16 h-16 rounded-full bg-white/[0.03] flex items-center justify-center">
+                                                                <NewBoardIcon sx={{ fontSize: 32, color: textSecondary, opacity: 0.3 }} />
+                                                            </div>
+                                                            <p className="text-sm font-medium" style={{ color: textSecondary }}>No pending boardings to review.</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                pendingBoardingsList.map((b, i) => (
+                                                    <motion.tr key={b._id}
+                                                        initial={{ opacity: 0, x: -12 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ delay: i * 0.06 }}
+                                                        style={{ borderBottom: `1px solid ${cardBorder}` }}
+                                                        className="group hover:bg-white/[0.02] transition-colors"
+                                                    >
+                                                        <td className="px-5 py-4">
+                                                            <div>
+                                                                <p className="text-sm font-semibold" style={{ color: textPrimary }}>{b.title}</p>
+                                                                <p className="text-[11px] mt-0.5" style={{ color: textSecondary }}>{b.roomType} • {b.genderType}</p>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-4 text-sm" style={{ color: textSecondary, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {b.address || '—'}
+                                                            <div className="mt-1">
+                                                                <span className="text-[11px] font-bold text-emerald-500">{b.pricePerMonth?.toLocaleString()} LKR/mo</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-4 text-sm" style={{ color: textSecondary }}>
+                                                            {b.ownerName || '—'}
+                                                            <p className="text-[10px] font-semibold">{b.contactNumber || '—'}</p>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-1">
+                                                                {b.nicPhoto && (
+                                                                    <Tooltip title="View NIC">
+                                                                        <IconButton size="small" component="a" href={getDocUrl(b.nicPhoto)} target="_blank" sx={{ color: '#818cf8' }}>
+                                                                            <ViewIcon sx={{ fontSize: 16 }} />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                )}
+                                                                {b.depositSlip && (
+                                                                    <Tooltip title="View Deposit Slip">
+                                                                        <IconButton size="small" component="a" href={getDocUrl(b.depositSlip)} target="_blank" sx={{ color: '#fbbf24' }}>
+                                                                            <DocIcon sx={{ fontSize: 16 }} />
+                                                                        </IconButton>
+                                                                    </Tooltip>
+                                                                )}
+                                                                {!b.nicPhoto && !b.depositSlip && (
+                                                                    <span className="text-xs" style={{ color: textSecondary }}>No docs</span>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                                                    onClick={() => setBoardingToApprove(b)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                                                    style={{ background: 'rgba(16,185,129,0.15)', color: '#34d399', border: '1px solid rgba(16,185,129,0.3)' }}>
+                                                                    <ApproveIcon sx={{ fontSize: 14 }} /> Approve
+                                                                </motion.button>
+                                                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                                                                    onClick={() => setBoardingToReject(b)}
+                                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                                                    style={{ background: 'rgba(239,68,68,0.1)', color: '#f87171', border: '1px solid rgba(239,68,68,0.25)' }}>
+                                                                    <RejectIcon sx={{ fontSize: 14 }} /> Reject
+                                                                </motion.button>
+                                                            </div>
+                                                        </td>
+                                                    </motion.tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+
                     {activeNav === 'approvals' && (
                         <motion.div key="approvals" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
 
@@ -1626,21 +2030,21 @@ const AdminDashboard = () => {
                                                             <div className="flex items-center gap-1">
                                                                 {row.nicPhoto && (
                                                                     <Tooltip title="View NIC Photo">
-                                                                        <IconButton size="small" component="a" href={row.nicPhoto} target="_blank" sx={{ color: '#818cf8' }}>
+                                                                        <IconButton size="small" component="a" href={getDocUrl(row.nicPhoto)} target="_blank" sx={{ color: '#818cf8' }}>
                                                                             <ViewIcon sx={{ fontSize: 16 }} />
                                                                         </IconButton>
                                                                     </Tooltip>
                                                                 )}
                                                                 {row.facePhoto && (
                                                                     <Tooltip title="View Face Photo">
-                                                                        <IconButton size="small" component="a" href={row.facePhoto} target="_blank" sx={{ color: '#22d3ee' }}>
+                                                                        <IconButton size="small" component="a" href={getDocUrl(row.facePhoto)} target="_blank" sx={{ color: '#22d3ee' }}>
                                                                             <ViewIcon sx={{ fontSize: 16 }} />
                                                                         </IconButton>
                                                                     </Tooltip>
                                                                 )}
                                                                 {row.boardingDocuments?.map((doc, idx) => (
                                                                     <Tooltip key={idx} title={`Boarding Doc ${idx + 1}`}>
-                                                                        <IconButton size="small" component="a" href={doc} target="_blank" sx={{ color: '#fbbf24' }}>
+                                                                        <IconButton size="small" component="a" href={getDocUrl(doc)} target="_blank" sx={{ color: '#fbbf24' }}>
                                                                             <DocIcon sx={{ fontSize: 16 }} />
                                                                         </IconButton>
                                                                     </Tooltip>
@@ -1676,6 +2080,161 @@ const AdminDashboard = () => {
                                 </div>
                             </motion.div>
                         </motion.div>
+                    )}
+
+                    {activeNav === 'boardings' && (
+                        <motion.div key="boardings" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }} className="space-y-6">
+
+                            {/* Section Title */}
+                            <div>
+                                <h1 className="text-2xl font-black" style={{ color: textPrimary }}>Active Boardings</h1>
+                                <p className="text-sm mt-1" style={{ color: textSecondary }}>View all approved and active boardings in the system.</p>
+                            </div>
+
+                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }}
+                                className="rounded-2xl overflow-hidden shadow-xl"
+                                style={{ background: cardBg, border: `1px solid ${cardBorder}`, boxShadow: darkMode ? 'none' : '0 2px 12px rgba(0,0,0,0.06)' }}>
+                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between px-6 py-6 border-b gap-4" style={{ borderColor: cardBorder }}>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                        <h2 className="text-sm font-bold" style={{ color: textPrimary }}>All Boardings ({filteredBoardings.length})</h2>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+                                        {/* Export PDF */}
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={handleExportBoardingsPDF}
+                                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-lg"
+                                            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', boxShadow: '0 4px 12px rgba(16,185,129,0.25)' }}
+                                        >
+                                            <PdfIcon sx={{ fontSize: 16 }} /> Export PDF
+                                        </motion.button>
+                                        {/* Search */}
+                                        <div className="relative group flex-1 md:flex-none md:w-56">
+                                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald-400 transition-colors" sx={{ fontSize: 18 }} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search title, address, owner..."
+                                                value={boardingSearchTerm}
+                                                onChange={(e) => setBoardingSearchTerm(e.target.value)}
+                                                className="w-full pl-10 pr-4 py-2 rounded-xl text-xs font-medium outline-none transition-all"
+                                                style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                            />
+                                        </div>
+                                        {/* Status Filter */}
+                                        <select
+                                            value={boardingStatusFilter}
+                                            onChange={(e) => setBoardingStatusFilter(e.target.value)}
+                                            className="px-3 py-2 rounded-xl text-xs font-bold outline-none cursor-pointer transition-all"
+                                            style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', border: `1px solid ${cardBorder}`, color: textSecondary }}
+                                        >
+                                            <option value="All">All Status</option>
+                                            <option value="Active">Active</option>
+                                            <option value="Inactive">Inactive</option>
+                                        </select>
+                                        {/* Room Type Filter */}
+                                        <select
+                                            value={boardingTypeFilter}
+                                            onChange={(e) => setBoardingTypeFilter(e.target.value)}
+                                            className="px-3 py-2 rounded-xl text-xs font-bold outline-none cursor-pointer transition-all"
+                                            style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', border: `1px solid ${cardBorder}`, color: textSecondary }}
+                                        >
+                                            <option value="All">All Types</option>
+                                            <option value="Single">Single</option>
+                                            <option value="Shared">Shared</option>
+                                            <option value="Annex">Annex</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead>
+                                            <tr style={{ borderBottom: `1px solid ${cardBorder}` }}>
+                                                {['Boarding Title', 'Location', 'Price (LKR)', 'Owner', 'Status', 'Actions'].map(h => (
+                                                    <th key={h} className="px-5 py-3 text-left text-[10px] font-black uppercase tracking-widest"
+                                                        style={{ color: textSecondary }}>{h}</th>
+                                                ))}
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {loading ? (
+                                                [...Array(5)].map((_, i) => <SkeletonRow key={i} />)
+                                            ) : filteredBoardings.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan="6" className="px-5 py-20 text-center">
+                                                        <div className="flex flex-col items-center gap-3">
+                                                            <div className="w-16 h-16 rounded-full bg-white/[0.03] flex items-center justify-center">
+                                                                <HomeIcon sx={{ fontSize: 32, color: textSecondary, opacity: 0.3 }} />
+                                                            </div>
+                                                            <p className="text-sm font-medium" style={{ color: textSecondary }}>No matching boardings found.</p>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                filteredBoardings.map((b, i) => (
+                                                    <motion.tr key={b._id}
+                                                        initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
+                                                        style={{ borderBottom: `1px solid ${cardBorder}` }}
+                                                        className="hover:bg-white/[0.02] transition-colors"
+                                                    >
+                                                        <td className="px-5 py-4">
+                                                            <div>
+                                                                <p className="text-sm font-semibold" style={{ color: textPrimary }}>{b.title}</p>
+                                                                <p className="text-[11px] mt-0.5" style={{ color: textSecondary }}>{b.roomType} • {b.genderType} Students</p>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-5 py-4 text-sm" style={{ color: textSecondary, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {b.address || '—'}
+                                                            <br /><span className="text-[10px] opacity-70">({b.distanceFromUniversity}km from SLIIT)</span>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <p className="text-sm font-black" style={{ color: '#10b981' }}>{b.pricePerMonth?.toLocaleString()}</p>
+                                                        </td>
+                                                        <td className="px-5 py-4 text-sm" style={{ color: textSecondary }}>
+                                                            {b.ownerName || '—'}<br />
+                                                            <span className="text-[10px] font-semibold">{b.contactNumber || '—'}</span>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg"
+                                                                style={{
+                                                                    background: b.availability ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                                                    color: b.availability ? '#34d399' : '#f87171'
+                                                                }}>
+                                                                {b.availability ? 'Active' : 'Inactive'}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-5 py-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <Tooltip title="Edit Boarding">
+                                                                    <IconButton size="small" onClick={() => setSelectedBoardingEdit(b)} sx={{ color: '#06b6d4', background: 'rgba(6,182,212,0.08)', '&:hover': { background: 'rgba(6,182,212,0.15)' } }}>
+                                                                        <EditIcon sx={{ fontSize: 16 }} />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                                <Tooltip title={b.availability ? "Set Inactive" : "Set Active"}>
+                                                                    <IconButton size="small" onClick={() => handleToggleBoardingStatus(b)} sx={{ color: b.availability ? '#f59e0b' : '#10b981', background: b.availability ? 'rgba(245,158,11,0.08)' : 'rgba(16,185,129,0.08)', '&:hover': { background: b.availability ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)' } }}>
+                                                                        {b.availability ? <WarningIcon sx={{ fontSize: 16 }} /> : <ApproveIcon sx={{ fontSize: 16 }} />}
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                                <Tooltip title="Delete Boarding">
+                                                                    <IconButton size="small" onClick={() => setBoardingToDelete(b)} sx={{ color: '#f87171', background: 'rgba(239,68,68,0.08)', '&:hover': { background: 'rgba(239,68,68,0.15)' } }}>
+                                                                        <DeleteIcon sx={{ fontSize: 16 }} />
+                                                                    </IconButton>
+                                                                </Tooltip>
+                                                            </div>
+                                                        </td>
+                                                    </motion.tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+
+                    {activeNav === 'advertisements' && (
+                        <AdAdmin hideSidebar={true} />
                     )}
 
                 </main>
@@ -1720,6 +2279,220 @@ const AdminDashboard = () => {
                 onConfirm={handleUpdateStatus}
                 darkMode={darkMode}
             />
+
+            {/* APPROVE BOARDING MODAL */}
+            <ApproveBoardingModal
+                boarding={boardingToApprove}
+                onClose={() => setBoardingToApprove(null)}
+                onConfirm={handleApproveBoardingWithMsg}
+                darkMode={darkMode}
+            />
+
+            {/* REJECT BOARDING MODAL */}
+            <RejectBoardingModal
+                boarding={boardingToReject}
+                onClose={() => setBoardingToReject(null)}
+                onConfirm={handleRejectBoardingWithMsg}
+                darkMode={darkMode}
+            />
+
+            {/* DELETE BOARDING MODAL */}
+            <AnimatePresence>
+                {boardingToDelete && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(12px)' }}
+                        onClick={() => setBoardingToDelete(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={e => e.stopPropagation()}
+                            className="w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl"
+                            style={{ background: darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)', border: `1px solid ${cardBorder}`, backdropFilter: 'blur(40px)' }}
+                        >
+                            <div className="p-8 text-center">
+                                <div className="w-20 h-20 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-6 border border-red-500/20">
+                                    <WarningIcon sx={{ fontSize: 40, color: '#f87171' }} />
+                                </div>
+                                <h2 className="text-xl font-black mb-2" style={{ color: textPrimary }}>Delete Boarding</h2>
+                                <p className="text-sm font-medium mb-2 leading-relaxed" style={{ color: textSecondary }}>Are you sure you want to delete</p>
+                                <p className="text-base font-black mb-1" style={{ color: '#f87171' }}>"{boardingToDelete.title}"?</p>
+                                <p className="text-xs mb-8" style={{ color: textSecondary }}>This action is permanent and cannot be undone.</p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={() => setBoardingToDelete(null)}
+                                        className="py-3 rounded-2xl font-bold text-sm transition-all"
+                                        style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', color: textPrimary, border: `1px solid ${cardBorder}` }}
+                                    >
+                                        Cancel
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        onClick={handleDeleteBoarding}
+                                        className="py-3 rounded-2xl font-bold text-sm text-white shadow-lg shadow-red-500/20"
+                                        style={{ background: 'linear-gradient(135deg,#f87171,#ef4444)' }}
+                                    >
+                                        Delete Boarding
+                                    </motion.button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* EDIT BOARDING MODAL */}
+            <AnimatePresence>
+                {selectedBoardingEdit && (
+                    <motion.div
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+                        style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(10px)' }}
+                        onClick={() => setSelectedBoardingEdit(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={e => e.stopPropagation()}
+                            className="w-full max-w-lg rounded-2xl overflow-hidden shadow-2xl"
+                            style={{ background: darkMode ? 'rgba(15,18,26,0.98)' : 'rgba(255,255,255,0.98)', border: `1px solid ${cardBorder}`, backdropFilter: 'blur(30px)', maxHeight: '90vh', overflowY: 'auto' }}
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: `1px solid ${cardBorder}` }}>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(6,182,212,0.12)' }}>
+                                        <EditIcon sx={{ fontSize: 18, color: '#06b6d4' }} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-base font-black" style={{ color: textPrimary }}>Edit Boarding</h2>
+                                        <p className="text-[10px]" style={{ color: textSecondary }}>Update boarding listing details</p>
+                                    </div>
+                                </div>
+                                <IconButton size="small" onClick={() => setSelectedBoardingEdit(null)} sx={{ color: textSecondary }}>
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            </div>
+                            {/* Form */}
+                            <form onSubmit={handleSaveBoardingEdit} className="p-6 space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Boarding Title</label>
+                                    <input
+                                        value={selectedBoardingEdit.title}
+                                        onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, title: e.target.value})}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                        style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Price / Month (LKR)</label>
+                                        <input
+                                            type="number"
+                                            value={selectedBoardingEdit.pricePerMonth}
+                                            onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, pricePerMonth: e.target.value})}
+                                            className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                            style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                            required
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Distance (km)</label>
+                                        <input
+                                            type="number"
+                                            step="0.1"
+                                            value={selectedBoardingEdit.distanceFromUniversity || ''}
+                                            onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, distanceFromUniversity: e.target.value})}
+                                            className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                            style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Room Type</label>
+                                        <select
+                                            value={selectedBoardingEdit.roomType || ''}
+                                            onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, roomType: e.target.value})}
+                                            className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none cursor-pointer"
+                                            style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                        >
+                                            <option value="Single">Single</option>
+                                            <option value="Shared">Shared</option>
+                                            <option value="Annex">Annex</option>
+                                        </select>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Gender Type</label>
+                                        <select
+                                            value={selectedBoardingEdit.genderType || ''}
+                                            onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, genderType: e.target.value})}
+                                            className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none cursor-pointer"
+                                            style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                        >
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Any">Any</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Location Address</label>
+                                    <input
+                                        value={selectedBoardingEdit.address}
+                                        onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, address: e.target.value})}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                        style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Contact Number</label>
+                                    <input
+                                        value={selectedBoardingEdit.contactNumber || ''}
+                                        onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, contactNumber: e.target.value})}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all"
+                                        style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Description</label>
+                                    <textarea
+                                        value={selectedBoardingEdit.description || ''}
+                                        onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, description: e.target.value})}
+                                        className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all min-h-[80px] resize-none"
+                                        style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 pt-2">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        type="button"
+                                        onClick={() => setSelectedBoardingEdit(null)}
+                                        className="py-3 rounded-xl font-bold text-sm transition-all"
+                                        style={{ background: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)', color: textPrimary, border: `1px solid ${cardBorder}` }}
+                                    >
+                                        Cancel
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+                                        type="submit"
+                                        className="py-3 rounded-xl font-bold text-sm text-white shadow-lg"
+                                        style={{ background: 'linear-gradient(135deg,#06b6d4,#0284c7)' }}
+                                    >
+                                        Save Changes
+                                    </motion.button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* SNACKBAR */}
             <Snackbar open={snackbar.open} autoHideDuration={3500} onClose={() => setSnackbar(p => ({ ...p, open: false }))}

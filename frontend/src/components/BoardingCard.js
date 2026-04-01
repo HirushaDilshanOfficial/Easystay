@@ -14,6 +14,21 @@ const BoardingCard = ({ boarding }) => {
                 <span className={`absolute top-3 left-3 text-[11px] font-extrabold text-white px-2.5 py-1 rounded-full shadow-sm ${boarding.availability ? 'bg-emerald-500' : 'bg-red-500'}`}>
                     {boarding.availability ? 'Available' : 'Occupied'}
                 </span>
+                {boarding.rating > 0 && (
+                    <span className={`absolute top-3 right-3 text-[11px] font-extrabold text-white px-2.5 py-1 rounded-full shadow-lg backdrop-blur-sm flex items-center gap-1 ${
+                        boarding.rating >= 4.8 ? 'bg-amber-500 ring-4 ring-amber-500/20' :
+                        boarding.rating >= 4.5 ? 'bg-blue-600 ring-4 ring-blue-600/20' :
+                        boarding.rating >= 4.0 ? 'bg-emerald-600 ring-4 ring-emerald-600/20' :
+                        'bg-slate-700/80'
+                    }`}>
+                        <Star size={10} fill="currentColor" />
+                        {boarding.rating >= 4.8 ? 'Exceptional' :
+                         boarding.rating >= 4.5 ? 'Top Rated' :
+                         boarding.rating >= 4.0 ? 'Highly Recommended' :
+                         boarding.rating >= 3.5 ? 'Good Stay' : 
+                         boarding.rating.toFixed(1)}
+                    </span>
+                )}
             </div>
             
             <div className="p-5 flex flex-col flex-1">

@@ -2,6 +2,7 @@ const Payment = require('../models/PaymentModel');
 const Tenancy = require('../models/TenancyModel');
 const Boarding = require('../models/BoardingModel');
 const User = require('../models/User');
+const sendEmail = require('../utils/emailService');
 
 // @desc    Upload payment slip
 // @route   POST /api/payments/upload
@@ -126,9 +127,60 @@ exports.updatePaymentStatus = async (req, res) => {
 
         // If approved and was not approved before, give 1 point to student
         if (status === 'Approved' && previousStatus !== 'Approved') {
-            await User.findByIdAndUpdate(payment.studentId, {
-                $inc: { loyaltyPoints: 1 }
-            });
+            const student = await User.findById(payment.studentId);
+            if (student) {
+                student.loyaltyPoints += 1;
+                await student.save();
+
+                // 1. Send Payment Approved Email
+                const boarding = await Boarding.findById(payment.boardingId);
+                
+                try {
+                    await sendEmail({
+                        email: student.email,
+                        subject: 'EasyStay - Payment Approved! ✅',
+                        html: `
+                            <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                                <h2 style="color: #4f46e5;">Payment Approved</h2>
+                                <p>Hello <b>${student.name}</b>,</p>
+                                <p>Your payment for <b>${payment.month}</b> for the property <b>${boarding?.title || 'your boarding'}</b> has been approved by the owner.</p>
+                                <div style="background: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                                    <p style="margin: 5px 0;"><b>Amount:</b> LKR ${payment.amount.toLocaleString()}</p>
+                                    <p style="margin: 5px 0;"><b>Status:</b> Approved ✅</p>
+                                </div>
+                                <p>You have earned <b>1 Loyalty Point</b>! Your total points: <b>${student.loyaltyPoints}</b></p>
+                                <p>Thank you for using EasyStay!</p>
+                            </div>
+                        `
+                    });
+                } catch (emailErr) {
+                    console.error("Failed to send payment approval email:", emailErr);
+                }
+
+                // 2. Loyalty Point Milestone (12 Points)
+                if (student.loyaltyPoints === 12) {
+                    try {
+                        await sendEmail({
+                            email: student.email,
+                            subject: 'EasyStay - Loyalty Reward Ready! 🎁✨',
+                            html: `
+                                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; text-align: center; border: 2px solid #f59e0b; border-radius: 12px;">
+                                    <h2 style="color: #f59e0b;">Congratulations! 🎉</h2>
+                                    <p style="font-size: 1.1rem;">You have reached <b>12 Loyalty Points</b>!</p>
+                                    <p>As a reward for being a loyal tenant, you have earned a <b>LKR 1,200.00 discount</b> on your next payment.</p>
+                                    <div style="background: #fffbeb; padding: 20px; border-radius: 10px; margin: 20px 0;">
+                                        <p style="font-size: 1.5rem; font-weight: bold; color: #b45309; margin: 0;">Reward: LKR 1,200 OFF</p>
+                                    </div>
+                                    <p>You can apply this discount when uploading your next payment slip.</p>
+                                    <p>Keep staying with EasyStay! 🏠✨</p>
+                                </div>
+                            `
+                        });
+                    } catch (emailErr) {
+                        console.error("Failed to send loyalty milestone email:", emailErr);
+                    }
+                }
+            }
         }
 
         // If rejected and was not rejected before AND a reward was used, refund the points

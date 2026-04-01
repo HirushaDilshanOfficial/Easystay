@@ -16,6 +16,8 @@ const appointmentRoutes = require('./routes/AppointmentRoutes');
 const tenancyRoutes = require('./routes/TenancyRoutes');
 const paymentRoutes = require('./routes/PaymentRoutes');
 const advertisementRoutes = require('./routes/AdvertisementRoutes');
+const reviewRoutes = require('./routes/ReviewRoutes');
+const reportRoutes = require('./routes/ReportRoutes');
 
 // Connect to database, then seed admin
 connectDB().then(() => seedAdmin());
@@ -49,6 +51,8 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/tenancy', tenancyRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/advertisements', advertisementRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Error handler
 app.use(errorHandler);

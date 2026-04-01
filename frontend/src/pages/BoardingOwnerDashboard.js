@@ -31,6 +31,7 @@ import api from '../api';
 import AddEditBoardingPage from './AddEditBoardingPage';
 import OwnerDashboard from './OwnerDashboard';
 import Advertisement from './Advertisements';
+import ReviewForm from './ReviewForm';
 
 const BoardingOwnerDashboard = () => {
     const navigate = useNavigate();
@@ -254,12 +255,14 @@ const BoardingOwnerDashboard = () => {
     };
 
     const sidebarItems = [
+        { id: 'home', label: 'Home', icon: <HomeIcon fontSize="small" /> },
         { id: 'dashboard', label: 'Dashboard', icon: <DashboardIcon fontSize="small" /> },
         { id: 'properties', label: 'My Properties', icon: <ApartmentIcon fontSize="small" /> },
         { id: 'appointments', label: 'Appointments', icon: <AppointmentsIcon fontSize="small" /> },
         { id: 'students', label: 'Students', icon: <TenantsIcon fontSize="small" /> },
         { id: 'payments', label: 'Payments', icon: <ReceiptIcon fontSize="small" /> },
         { id: 'advertisements', label: 'Advertisements', icon: <AdIcon fontSize="small" /> },
+        { id: 'inquire', label: 'Inquire', icon: <StarIcon fontSize="small" /> },
         { id: 'profile', label: 'Profile', icon: <PersonIcon fontSize="small" /> },
     ];
 
@@ -277,7 +280,7 @@ const BoardingOwnerDashboard = () => {
                     {sidebarItems.map((item) => (
                         <div
                             key={item.id}
-                            onClick={() => setActiveTab(item.id)}
+                            onClick={() => item.id === 'home' ? navigate('/') : setActiveTab(item.id)}
                             className={`flex items-center gap-3 p-3 rounded-xl font-medium cursor-pointer transition-all duration-200 ${activeTab === item.id ? 'bg-blue-50 text-blue-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}
                         >
                             {item.icon} {item.label}
@@ -924,6 +927,21 @@ const BoardingOwnerDashboard = () => {
                     {activeTab === 'advertisements' && (
                         <Box className="bg-white rounded-2xl border border-gray-100 overflow-hidden min-h-[500px]">
                             <Advertisement hideHeader={true} ownerId={user?.id} />
+                        </Box>
+                    )}
+
+                    {/* ── Inquire Tab ── */}
+                    {activeTab === 'inquire' && (
+                        <Box className="bg-white rounded-2xl border border-gray-100 min-h-[500px] p-8">
+                            <Grid container spacing={3}>
+                                <Grid item xs={12} md={8} lg={6}>
+                                    <Typography variant="h5" sx={{ fontWeight: 800, color: '#1f2937', mb: 1 }}>Inquire & Review</Typography>
+                                    <Typography variant="body2" sx={{ color: '#9ca3af', mb: 4 }}>Submit feedback or inquiries related to specific bookings.</Typography>
+                                    <Paper sx={{ p: 4, borderRadius: 4, border: '1px solid #f3f4f6', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.05)' }}>
+                                        <ReviewForm />
+                                    </Paper>
+                                </Grid>
+                            </Grid>
                         </Box>
                     )}
 

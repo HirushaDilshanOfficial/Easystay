@@ -37,6 +37,7 @@ import {
     Campaign as AdIcon
 } from '@mui/icons-material';
 import AdAdmin from './AdAdmin';
+import AdInquire from './Adinquire';
 import { motion, AnimatePresence } from 'framer-motion';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -50,12 +51,14 @@ import userService from '../services/userService';
 import api from '../api';
 
 const NAV_ITEMS = [
+    { icon: HomeIcon, label: 'Home', id: 'home_nav' }, // Direct Home link
     { icon: DashboardIcon, label: 'Dashboard', id: 'dashboard' },
     { icon: PeopleIcon, label: 'Users', id: 'users' },
     { icon: HomeIcon, label: 'Boardings', id: 'boardings' },
     { icon: NewBoardIcon, label: 'New Boardings', id: 'newBoardings' },
     { icon: AdIcon, label: 'Advertisements', id: 'advertisements' },
     { icon: ApproveIcon, label: 'Approvals', id: 'approvals' },
+    { icon: WarningIcon, label: 'Inquiries', id: 'inquire' },
 ];
 
 const DUMMY_CHART_DATA = [
@@ -608,11 +611,12 @@ function RejectReasonModal({ user: u, onClose, onConfirm, darkMode }) {
 
 
 function ApproveBoardingModal({ boarding: b, onClose, onConfirm, darkMode }) {
-    const defaultMsg = b ? `Hello ${b.ownerName},\n\nGood news! Your boarding listing "${b.title}" has been approved by the admin and is now live on EasyStay.\n\nThank you for using our platform.` : '';
     const [message, setMessage] = useState('');
-    
     useEffect(() => {
-        if (b) setMessage(defaultMsg);
+        if (b) {
+            const defaultMsg = `Hello ${b.ownerName},\n\nGood news! Your boarding listing "${b.title}" has been approved by the admin and is now live on EasyStay.\n\nThank you for using our platform.`;
+            setMessage(defaultMsg);
+        }
     }, [b]);
 
     if (!b) return null;
@@ -1261,7 +1265,7 @@ const AdminDashboard = () => {
                                     key={id}
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
-                                    onClick={() => setActiveNav(id)}
+                                    onClick={() => id === 'home_nav' ? navigate('/') : setActiveNav(id)}
                                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-left relative"
                                     style={{
                                         background: isActive
@@ -2235,6 +2239,10 @@ const AdminDashboard = () => {
 
                     {activeNav === 'advertisements' && (
                         <AdAdmin hideSidebar={true} />
+                    )}
+
+                    {activeNav === 'inquire' && (
+                        <AdInquire />
                     )}
 
                 </main>

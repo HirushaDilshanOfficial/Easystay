@@ -255,6 +255,9 @@ const Dashboard = () => {
                     </Typography>
                 </div>
                 <div className="flex-1 px-4 space-y-1 mt-4">
+                    <div onClick={() => navigate('/')} className="flex items-center gap-3 p-3 text-gray-500 hover:bg-gray-50 rounded-xl font-medium cursor-pointer transition-all duration-200">
+                        <HomeIcon fontSize="small" /> Home
+                    </div>
                     <div onClick={() => setActiveTab('dashboard')} className={`flex items-center gap-3 p-3 rounded-xl font-medium cursor-pointer transition-all duration-200 ${activeTab === 'dashboard' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-500 hover:bg-gray-50'}`}>
                         <DashboardIcon fontSize="small" /> Dashboard
                     </div>

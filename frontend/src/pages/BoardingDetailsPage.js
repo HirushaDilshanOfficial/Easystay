@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MapPin, Phone, User, CheckCircle, ArrowLeft, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
+import { MapPin, Phone, User, CheckCircle, ArrowLeft, Calendar, Clock, Image as ImageIcon, Star } from 'lucide-react';
 import api from '../api';
+import SubmitReview from '../components/submitreviews';
 
 const BoardingDetailsPage = () => {
     const { id } = useParams();
@@ -192,7 +193,12 @@ const BoardingDetailsPage = () => {
                     </div>
                 </div>
             </div>
-            
+
+            {/* Reviews Section */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
+                <ReviewSection boardingId={boarding._id} />
+            </div>
+
             {/* Minimal CSS for custom scrollbar */}
             <style dangerouslySetInnerHTML={{__html: `
                 .custom-scrollbar::-webkit-scrollbar {
@@ -474,6 +480,183 @@ const AppointmentBooking = ({ boardingId, ownerName, ownerPhone }) => {
                         <User size={18} /> Login to Continue
                     </Link>
                 )}
+            </div>
+        </div>
+    );
+};
+
+// ─── Review Section ──────────────────────────────────────────────
+const ReviewSection = ({ boardingId }) => {
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const storedUser = JSON.parse(localStorage.getItem('user'));
+    const user = storedUser?.user;
+
+    const fetchReviews = useCallback(async () => {
+        try {
+            const res = await api.get(`/reviews/${boardingId}`);
+            setReviews(res.data.data || []);
+        } catch (err) {
+            console.error('Failed to load reviews:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, [boardingId]);
+
+    useEffect(() => { fetchReviews(); }, [fetchReviews]);
+
+    const avg = reviews.length
+        ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+        : 0;
+
+    const ratingLabel = (r) => ['', 'Bad', 'Average', 'Good', 'Great', 'Excellent'][Math.round(r)] || '';
+
+    // Analytics calculations
+    const total = reviews.length;
+    const pos   = reviews.filter(r => r.rating >= 4).length;
+    const crit  = reviews.filter(r => r.rating <= 2).length;
+
+    const dist = [5,4,3,2,1].map(n => ({
+        star: n,
+        count: reviews.filter(r => r.rating === n).length,
+        pct: total ? Math.round((reviews.filter(r => r.rating === n).length / total) * 100) : 0,
+    }));
+
+    return (
+        <div className="pb-10">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center">
+                    <Star size={20} className="text-amber-500 fill-amber-500" />
+                </div>
+                <div>
+                    <h2 className="text-2xl font-black text-slate-900">Guest Reviews</h2>
+                    {reviews.length > 0 && (
+                        <p className="text-slate-500 text-sm font-medium">
+                            {avg.toFixed(1)} / 5 &nbsp;·&nbsp; {reviews.length} review{reviews.length !== 1 ? 's' : ''} &nbsp;·&nbsp;
+                            <span className="text-amber-600 font-bold">{ratingLabel(avg)}</span>
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* Analytics Stat Grid */}
+            {reviews.length > 0 && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col justify-center">
+                        <div className="text-3xl font-black text-slate-900 mb-1">{total}</div>
+                        <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Total Reviews</div>
+                    </div>
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col justify-center">
+                        <div className="text-3xl font-black text-slate-900 mb-1">{avg.toFixed(1)}</div>
+                        <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Avg Rating</div>
+                    </div>
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col justify-center">
+                        <div className="text-3xl font-black text-emerald-600 mb-1">{pos}</div>
+                        <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Positive (4-5★)</div>
+                    </div>
+                    <div className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-col justify-center">
+                        <div className="text-3xl font-black text-rose-600 mb-1">{crit}</div>
+                        <div className="text-xs font-bold text-slate-500 uppercase tracking-widest">Critical (1-2★)</div>
+                    </div>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Review Form — uses SubmitReview component */}
+                <div className="lg:col-span-1">
+                    <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-2 mb-5">
+                            <span className="text-blue-500 font-bold text-lg">💬</span>
+                            <h3 className="font-black text-slate-900 text-lg">Write a Review</h3>
+                        </div>
+
+                        {!user ? (
+                            <div className="text-center py-4">
+                                <p className="text-slate-500 text-sm mb-4">Login to leave a review for this property.</p>
+                                <Link to="/login" className="inline-flex items-center gap-2 bg-blue-600 text-white font-bold py-2.5 px-5 rounded-xl hover:bg-blue-700 transition-colors text-sm">
+                                    Login to Review
+                                </Link>
+                            </div>
+                        ) : (
+                            <SubmitReview boardingId={boardingId} onReviewAdded={fetchReviews} />
+                        )}
+                    </div>
+
+                    {/* Rating Distribution */}
+                    {reviews.length > 0 && (
+                        <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 mt-6">
+                            <h3 className="font-black text-slate-900 text-lg mb-4">Rating Distribution</h3>
+                            <div className="space-y-3">
+                                {dist.map(d => (
+                                    <div key={d.star} className="flex items-center gap-3">
+                                        <div className="flex items-center gap-1 w-12 shrink-0">
+                                            <span className="text-sm font-bold text-slate-700">{d.star}</span>
+                                            <span className="text-sm text-amber-400">★</span>
+                                        </div>
+                                        <div className="flex-1 h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                            <div 
+                                                className={`h-full rounded-full ${d.star >= 4 ? 'bg-emerald-500' : d.star === 3 ? 'bg-amber-400' : 'bg-rose-500'}`}
+                                                style={{ width: `${d.pct}%` }}
+                                            />
+                                        </div>
+                                        <div className="w-12 text-right shrink-0">
+                                            <span className="text-xs font-bold text-slate-500">{d.count}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Review List */}
+                <div className="lg:col-span-2">
+                    {loading ? (
+                        <div className="flex justify-center py-16">
+                            <div className="w-8 h-8 border-4 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+                        </div>
+                    ) : reviews.length === 0 ? (
+                        <div className="bg-white rounded-3xl p-10 text-center border border-slate-100 shadow-sm">
+                            <div className="text-4xl mb-3">💬</div>
+                            <p className="font-bold text-slate-700 mb-1">No reviews yet</p>
+                            <p className="text-slate-400 text-sm">Be the first to share your experience!</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {reviews.map(r => (
+                                <div key={r._id} className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shrink-0">
+                                                <span className="text-white font-black text-sm">
+                                                    {r.isAnonymous ? 'A' : r.userName?.[0]?.toUpperCase()}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <p className="font-black text-slate-800 text-sm">
+                                                    {r.isAnonymous ? 'Anonymous' : r.userName}
+                                                    {r.isAnonymous && user?.role === 'Admin' && (
+                                                        <span className="text-xs text-slate-400 font-normal ml-2">
+                                                            (Real Name: {r.originalUserName})
+                                                        </span>
+                                                    )}
+                                                </p>
+                                                <p className="text-slate-400 text-xs">{new Date(r.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-0.5">
+                                            {[1,2,3,4,5].map(i => (
+                                                <span key={i} className={`text-lg ${i <= r.rating ? 'text-amber-400' : 'text-slate-200'}`}>★</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <p className="text-slate-600 text-sm leading-relaxed">{r.comment}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

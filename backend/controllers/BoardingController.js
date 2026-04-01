@@ -166,7 +166,7 @@ const getAllBoardings = async (req, res) => {
             filter.availability = availability === "true";
         }
 
-        const boardings = await Boarding.find(filter).sort({ _id: 1 });
+        const boardings = await Boarding.find(filter).sort({ rating: -1, createdAt: -1 });
 
         res.status(200).json({
             success: true,

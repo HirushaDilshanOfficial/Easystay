@@ -1,0 +1,48 @@
+const mongoose = require('mongoose');
+
+const roommateProfileSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        unique: true
+    },
+    budget: {
+        type: Number,
+        required: [true, 'Please provide your maximum budget']
+    },
+    sleepingHabit: {
+        type: String,
+        enum: ['Early Bird', 'Night Owl', 'Flexible'],
+        required: [true, 'Please provide your sleeping habit']
+    },
+    cleanliness: {
+        type: String,
+        enum: ['Very Clean', 'Average', 'Messy'],
+        required: [true, 'Please provide your cleanliness level']
+    },
+    studyPattern: {
+        type: String,
+        enum: ['Quiet Study', 'Group Study', 'Music OK'],
+        required: [true, 'Please provide your study pattern']
+    },
+    smokingPreference: {
+        type: String,
+        enum: ['Non-Smoker', 'Smoker', 'No Preference'],
+        required: [true, 'Please provide your smoking preference']
+    },
+    gender: {
+        type: String,
+        enum: ['Male', 'Female', 'Any'],
+        required: [true, 'Please provide preferred roommate gender']
+    },
+    description: {
+        type: String,
+        trim: true,
+        default: ''
+    }
+}, {
+    timestamps: true
+});
+
+module.exports = mongoose.model('RoommateProfile', roommateProfileSchema);

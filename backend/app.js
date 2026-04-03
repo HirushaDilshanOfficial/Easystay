@@ -20,9 +20,11 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Routes
 const boardingRoutes = require("./Routes/BoardingRoutes");
 const appointmentRoutes = require("./Routes/AppointmentRoutes");
+const roommateRoutes = require("./routes/RoommateRoutes");
 
 app.use("/api/boardings", boardingRoutes);
 app.use("/api/appointments", appointmentRoutes);
+app.use("/api/roommates", roommateRoutes);
 
 // Default route
 app.get("/", (req, res) => {

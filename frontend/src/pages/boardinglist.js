@@ -6,6 +6,8 @@ import { Search, RotateCcw as RefreshIcon } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import BoardingListingDashboard from './BoardingListingDashboard';
 import heroBg from '../assets/hero-bg.png';
+import SmartRoommateModal from '../components/SmartRoommateModal';
+import { Users, Zap } from 'lucide-react';
 
 const HomePage = () => {
     const [boardings, setBoardings] = useState([]);
@@ -18,6 +20,7 @@ const HomePage = () => {
     const [roomType, setRoomType] = useState('');
     const [genderType, setGenderType] = useState('');
     const [facilitiesFilter, setFacilitiesFilter] = useState([]);
+    const [isRoommateModalOpen, setIsRoommateModalOpen] = useState(false);
 
     const facilityOptions = ["WiFi", "AC", "Water", "Food", "CCTV", "Parking", "Laundry"];
 
@@ -87,6 +90,32 @@ const HomePage = () => {
             <div className="max-w-7xl mx-auto px-6 py-8">
                 {/* Advertisements Banner */}
                 <BoardingListingDashboard />
+
+                {/* Unique Feature: Smart Roommate Matching Banner */}
+                <div className="relative overflow-hidden bg-gradient-to-r from-blue-700 to-indigo-800 rounded-3xl p-6 md:p-8 mb-8 shadow-xl shadow-blue-200">
+                    <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center shrink-0 border border-white/20">
+                                <Users className="text-white" size={32} />
+                            </div>
+                            <div>
+                                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">Smart Roommate Matching</h2>
+                                <p className="text-blue-100 text-sm font-medium max-w-md opacity-90">
+                                    Don't live alone! Find a compatible roommate based on your budget, study patterns, and lifestyle.
+                                </p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setIsRoommateModalOpen(true)}
+                            className="bg-white text-blue-700 hover:bg-blue-50 px-8 py-4 rounded-2xl font-black text-sm uppercase tracking-widest shadow-lg transition-all hover:-translate-y-1 active:translate-y-0 flex items-center gap-2"
+                        >
+                            <Zap className="fill-blue-700" size={16} /> Find Roommate
+                        </button>
+                    </div>
+                    {/* Decorative Elements */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+                    <div className="absolute bottom-0 left-0 w-32 h-32 bg-blue-400/10 rounded-full -ml-16 -mb-16 blur-2xl"></div>
+                </div>
 
                 {/* Horizontal Top Filters */}
                 <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8 sticky top-[72px] z-20 backdrop-blur-md bg-white/90">
@@ -200,6 +229,11 @@ const HomePage = () => {
                     )}
                 </main>
             </div>
+
+            <SmartRoommateModal 
+                isOpen={isRoommateModalOpen} 
+                onClose={() => setIsRoommateModalOpen(false)} 
+            />
         </div>
     );
 };

@@ -55,14 +55,21 @@ const seedDatabase = async () => {
         console.log("✅ Downloads complete!");
 
         const realImages = [
-            "modern_room_0.jpg",
-            "modern_room_1.jpg",
-            "modern_room_2.jpg",
-            "modern_room_3.jpg",
-            "modern_room_4.jpg",
-            "modern_room_5.jpg",
-            "modern_room_6.jpg",
-            "modern_room_7.jpg"
+            "Screenshot 2026-03-21 at 23.45.20.png",
+            "Screenshot 2026-03-21 at 23.45.52.png",
+            "Screenshot 2026-03-21 at 23.47.49.png",
+            "Screenshot 2026-03-21 at 23.48.09.png",
+            "Screenshot 2026-03-21 at 23.49.46.png",
+            "Screenshot 2026-03-22 at 07.25.35.png",
+            "Screenshot 2026-03-22 at 07.25.46.png",
+            "Screenshot 2026-03-22 at 07.26.51.png",
+            "Screenshot 2026-03-22 at 07.27.00.png",
+            "Screenshot 2026-03-22 at 07.27.21.png",
+            "Screenshot 2026-03-22 at 07.27.49.png",
+            "Screenshot 2026-03-22 at 07.27.54.png",
+            "Screenshot 2026-03-22 at 07.28.04.png",
+            "Screenshot 2026-03-22 at 07.28.11.png",
+            "Screenshot 2026-03-22 at 07.28.28.png"
         ];
         
         const getImage = (index) => realImages[index % realImages.length];

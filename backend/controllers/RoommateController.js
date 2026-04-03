@@ -24,25 +24,33 @@ exports.getMyProfile = async (req, res) => {
 // @access  Private
 exports.createOrUpdateProfile = async (req, res) => {
     try {
-        const { budget, sleepingHabit, cleanliness, studyPattern, smokingPreference, gender, description } = req.body;
+        const { budget, sleepingHabit, cleanliness, studyPattern, otherDetails, description } = req.body;
+
+        // Simple validation check before DB call
+        if (!budget || !sleepingHabit || !cleanliness || !studyPattern) {
+            return res.status(400).json({ success: false, message: 'Missing required lifestyle fields (Budget, Sleep, Cleanliness, or Study).' });
+        }
 
         const profileFields = {
-            user: req.user._id,
-            budget,
+            user: req.user?._id || req.user?.id, // Handle both _id and id
+            budget: Number(budget),
             sleepingHabit,
             cleanliness,
             studyPattern,
-            smokingPreference,
-            gender,
-            description
+            otherDetails: otherDetails || '',
+            description: description || ''
         };
 
-        let profile = await RoommateProfile.findOne({ user: req.user._id });
+        if (!profileFields.user) {
+            return res.status(401).json({ success: false, message: 'User identification failed. Please log out and log in again.' });
+        }
+
+        let profile = await RoommateProfile.findOne({ user: profileFields.user });
 
         if (profile) {
             // Update
             profile = await RoommateProfile.findOneAndUpdate(
-                { user: req.user._id },
+                { user: profileFields.user },
                 { $set: profileFields },
                 { new: true, runValidators: true }
             );
@@ -53,104 +61,65 @@ exports.createOrUpdateProfile = async (req, res) => {
         profile = await RoommateProfile.create(profileFields);
         res.status(201).json({ success: true, data: profile });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: error.message || 'Server Error' });
+        console.error('SERVER ERROR IN createOrUpdateProfile:', error);
+        res.status(400).json({ success: false, message: `Save Failed: ${error.message}` });
     }
 };
 
-// @desc    Get matched roommates
+// @desc    Get all roommate profiles (Community Board)
 // @route   GET /api/roommates/match
 // @access  Private
 exports.getMatchedRoommates = async (req, res) => {
     try {
         const currentProfile = await RoommateProfile.findOne({ user: req.user._id });
 
-        if (!currentProfile) {
-            return res.status(400).json({ success: false, message: 'Please create a roommate profile first to find matches.' });
-        }
+        // Fetch all profiles for the community board
+        const otherProfiles = await RoommateProfile.find({}).populate('user', 'name email');
 
-        // Fetch all other profiles
-        const otherProfiles = await RoommateProfile.find({ user: { $ne: req.user._id } }).populate('user', 'name email');
-
-        const matches = [];
+        const communityBoard = [];
 
         otherProfiles.forEach(profile => {
-            // Optional: Filter by gender if the current user has a strict preference
-            if (currentProfile.gender !== 'Any' && profile.gender !== 'Any' && currentProfile.gender !== profile.gender) {
-                return; // Skip this profile
-            }
-
             let score = 0;
-            let maxScore = 100;
+            
+            // If current user has a profile, calculate a "Compatibility" hint for the board
+            if (currentProfile) {
+                // 1. Budget Match (25 points max)
+                const budgetDiff = Math.abs(currentProfile.budget - profile.budget);
+                const maxBudget = Math.max(currentProfile.budget, profile.budget);
+                if (maxBudget > 0) {
+                    const budgetScore = 25 * (1 - (budgetDiff / maxBudget));
+                    score += Math.max(0, budgetScore);
+                } else { score += 25; }
 
-            // 1. Budget Match (20 points max)
-            // If the difference is 0, score is 20. The larger the difference, the lower the score.
-            const budgetDiff = Math.abs(currentProfile.budget - profile.budget);
-            const maxBudget = Math.max(currentProfile.budget, profile.budget);
-            if (maxBudget > 0) {
-                const budgetScore = 20 * (1 - (budgetDiff / maxBudget));
-                score += Math.max(0, budgetScore);
-            } else {
-                score += 20;
+                // 2. Sleeping Habit (25 points)
+                if (currentProfile.sleepingHabit === profile.sleepingHabit) score += 25;
+                else if (currentProfile.sleepingHabit === 'Flexible' || profile.sleepingHabit === 'Flexible') score += 12;
+
+                // 3. Cleanliness (25 points)
+                if (currentProfile.cleanliness === profile.cleanliness) score += 25;
+                else if (Math.abs(['Very Clean', 'Average', 'Messy'].indexOf(currentProfile.cleanliness) - ['Very Clean', 'Average', 'Messy'].indexOf(profile.cleanliness)) === 1) score += 12;
+
+                // 4. Study Pattern (25 points)
+                if (currentProfile.studyPattern === profile.studyPattern) score += 25;
             }
 
-            // 2. Sleeping Habit Match (20 points)
-            if (currentProfile.sleepingHabit === profile.sleepingHabit) {
-                score += 20;
-            } else if (currentProfile.sleepingHabit === 'Flexible' || profile.sleepingHabit === 'Flexible') {
-                score += 10;
-            } else {
-                score += 0;
-            }
-
-            // 3. Cleanliness Match (20 points)
-            if (currentProfile.cleanliness === profile.cleanliness) {
-                score += 20;
-            } else if (
-                (currentProfile.cleanliness === 'Very Clean' && profile.cleanliness === 'Average') ||
-                (currentProfile.cleanliness === 'Average' && profile.cleanliness === 'Very Clean') ||
-                (currentProfile.cleanliness === 'Messy' && profile.cleanliness === 'Average') ||
-                (currentProfile.cleanliness === 'Average' && profile.cleanliness === 'Messy')
-            ) {
-                score += 10;
-            } else {
-                score += 0; // Very Clean and Messy are 0 compatibility
-            }
-
-            // 4. Study Pattern Match (20 points)
-            if (currentProfile.studyPattern === profile.studyPattern) {
-                score += 20;
-            } else if (
-                (currentProfile.studyPattern === 'Music OK' && profile.studyPattern === 'Group Study') ||
-                (currentProfile.studyPattern === 'Group Study' && profile.studyPattern === 'Music OK')
-            ) {
-                score += 10;
-            } else {
-                score += 0;
-            }
-
-            // 5. Smoking Preference (20 points)
-            if (currentProfile.smokingPreference === profile.smokingPreference) {
-                score += 20;
-            } else if (currentProfile.smokingPreference === 'No Preference' || profile.smokingPreference === 'No Preference') {
-                score += 10;
-            } else {
-                score += 0; // Smoker and Non-Smoker
-            }
-
-            matches.push({
+            communityBoard.push({
                 profile,
-                matchPercentage: Math.round(score)
+                matchPercentage: currentProfile ? Math.round(score) : 0
             });
         });
 
-        // Sort by match percentage descending
-        matches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+        // Always return the data, sorted by match percentage if a profile exists, otherwise by recency
+        if (currentProfile) {
+            communityBoard.sort((a, b) => b.matchPercentage - a.matchPercentage);
+        } else {
+            communityBoard.sort((a, b) => b.profile.createdAt - a.profile.createdAt);
+        }
 
         res.status(200).json({
             success: true,
-            count: matches.length,
-            data: matches
+            count: communityBoard.length,
+            data: communityBoard
         });
 
     } catch (error) {

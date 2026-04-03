@@ -16,9 +16,8 @@ const sampleRoommates = [
             sleepingHabit: 'Early Bird',
             cleanliness: 'Very Clean',
             studyPattern: 'Quiet Study',
-            smokingPreference: 'Non-Smoker',
-            gender: 'Female',
-            description: 'I am a first-year SLIIT student looking for a quiet and clean place.'
+            description: 'First-year SLIIT student. Looking for a quiet and clean place.',
+            otherDetails: 'Prefer places near Pittugala. I like gardening and quiet environments.'
         }
     },
     {
@@ -31,9 +30,8 @@ const sampleRoommates = [
             sleepingHabit: 'Night Owl',
             cleanliness: 'Average',
             studyPattern: 'Music OK',
-            smokingPreference: 'Non-Smoker',
-            gender: 'Male',
-            description: 'Engineering student, usually up late studying or gaming.'
+            description: 'Engineering student at SLIIT.',
+            otherDetails: 'I play guitar and stay up late. Looking for chill roommates who don\'t mind a bit of music.'
         }
     },
     {
@@ -46,9 +44,8 @@ const sampleRoommates = [
             sleepingHabit: 'Flexible',
             cleanliness: 'Very Clean',
             studyPattern: 'Group Study',
-            smokingPreference: 'Non-Smoker',
-            gender: 'Female',
-            description: 'Looking for a roommate who enjoys group study sessions.'
+            description: 'IT student, very social.',
+            otherDetails: 'Looking for a shared apartment with AC. I cook great Sri Lankan food!'
         }
     },
     {
@@ -59,11 +56,10 @@ const sampleRoommates = [
         profile: {
             budget: 8000,
             sleepingHabit: 'Early Bird',
-            cleanliness: 'Messy',
+            cleanliness: 'Average',
             studyPattern: 'Quiet Study',
-            smokingPreference: 'Smoker',
-            gender: 'Male',
-            description: 'Low budget, chill guy.'
+            description: 'Business student on a budget.',
+            otherDetails: 'Just need a basic place to sleep and study. Very quiet person.'
         }
     }
 ];
@@ -73,7 +69,6 @@ const seedRoommates = async () => {
         await mongoose.connect(process.env.MONGO_URI);
         console.log('MongoDB Connected for Seeding...');
 
-        // Clear existing sample roommate users if any
         const emails = sampleRoommates.map(r => r.email);
         const existingUsers = await User.find({ email: { $in: emails } });
         const existingUserIds = existingUsers.map(u => u._id);
@@ -96,7 +91,7 @@ const seedRoommates = async () => {
             });
         }
 
-        console.log('🎉 Sample roommates seeded successfully!');
+        console.log('🎉 Sample roommates re-seeded with community board format!');
         process.exit();
     } catch (err) {
         console.error(err);

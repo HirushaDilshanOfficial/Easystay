@@ -26,17 +26,12 @@ const roommateProfileSchema = new mongoose.Schema({
         enum: ['Quiet Study', 'Group Study', 'Music OK'],
         required: [true, 'Please provide your study pattern']
     },
-    smokingPreference: {
-        type: String,
-        enum: ['Non-Smoker', 'Smoker', 'No Preference'],
-        required: [true, 'Please provide your smoking preference']
-    },
-    gender: {
-        type: String,
-        enum: ['Male', 'Female', 'Any'],
-        required: [true, 'Please provide preferred roommate gender']
-    },
     description: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    otherDetails: {
         type: String,
         trim: true,
         default: ''

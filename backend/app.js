@@ -18,8 +18,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Routes
-const boardingRoutes = require("./Routes/BoardingRoutes");
-const appointmentRoutes = require("./Routes/AppointmentRoutes");
+const boardingRoutes = require("./routes/BoardingRoutes");
+const appointmentRoutes = require("./routes/AppointmentRoutes");
 const roommateRoutes = require("./routes/RoommateRoutes");
 
 app.use("/api/boardings", boardingRoutes);

@@ -18,6 +18,7 @@ const paymentRoutes = require('./routes/PaymentRoutes');
 const advertisementRoutes = require('./routes/AdvertisementRoutes');
 const reviewRoutes = require('./routes/ReviewRoutes');
 const reportRoutes = require('./routes/ReportRoutes');
+const roommateRoutes = require('./routes/RoommateRoutes');
 
 // Connect to database, then seed admin
 connectDB().then(() => seedAdmin());
@@ -29,6 +30,12 @@ app.use(cors({
     origin: true,
     credentials: true
 }));
+
+// DIAGNOSTIC LOGGER: Log all incoming requests to help debug 404s
+app.use((req, res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    next();
+});
 
 // Body parser with increased limit for base64 images
 app.use(express.json({ limit: '50mb' }));
@@ -53,6 +60,13 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/advertisements', advertisementRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/roommates', roommateRoutes);
+
+// Fallback for 404s to help debugging
+app.use((req, res) => {
+    console.warn(`[404 NOT FOUND] ${req.method} ${req.url}`);
+    res.status(404).json({ success: false, message: `Route ${req.method} ${req.url} not found` });
+});
 
 // Error handler
 app.use(errorHandler);

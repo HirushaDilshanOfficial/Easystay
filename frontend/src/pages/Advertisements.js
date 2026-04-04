@@ -368,10 +368,10 @@ export default function Advertisement({ hideHeader = false, ownerId: propOwnerId
 
             {/* Table */}
             <div style={{ background:"#FFFFFF",border:"1px solid rgba(37,99,235,0.12)",borderRadius:20,overflow:"hidden" }}>
-              <div style={{ display:"grid",gridTemplateColumns:"2fr 3fr 1.3fr 1.2fr 1.2fr 100px",
+              <div style={{ display:"grid",gridTemplateColumns:"2fr 3fr 1.3fr 1.1fr 1.1fr 1fr 100px",
                 padding:"13px 24px",background:"#F1F5FF",borderBottom:"1px solid rgba(37,99,235,0.12)",
                 fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.09em" }}>
-                {["Advertisement","Description","Phone","Package","Date","Actions"].map(h => <span key={h}>{h}</span>)}
+                {["Advertisement","Description","Phone","Package","Status","Date","Actions"].map(h => <span key={h}>{h}</span>)}
               </div>
 
               {loading ? (
@@ -389,7 +389,7 @@ export default function Advertisement({ hideHeader = false, ownerId: propOwnerId
                   const pkg = getPkg(ad.packageType);
                   return (
                     <div key={ad._id} className="tr"
-                      style={{ display:"grid",gridTemplateColumns:"2fr 3fr 1.3fr 1.2fr 1.2fr 100px",
+                      style={{ display:"grid",gridTemplateColumns:"2fr 3fr 1.3fr 1.1fr 1.1fr 1fr 100px",
                         padding:"15px 24px",
                         borderBottom: i<advertisements.length-1 ? "1px solid rgba(37,99,235,0.07)" : "none",
                         alignItems:"center",transition:"background 0.15s" }}>
@@ -415,6 +415,19 @@ export default function Advertisement({ hideHeader = false, ownerId: propOwnerId
                           fontSize:11,fontWeight:700,background:`${pkg.color}18`,color:pkg.color,border:`1px solid ${pkg.color}35` }}>
                           {pkg.name}
                         </span>
+                      </div>
+                      <div>
+                        {(() => {
+                          const isAppr = ad.status === 'approved';
+                          const isRej  = ad.status === 'rejected';
+                          const stCol  = isAppr ? '#059669' : isRej ? '#DC2626' : '#D97706';
+                          return (
+                            <span style={{ display:"inline-flex",alignItems:"center",padding:"4px 11px",borderRadius:20,
+                              fontSize:11,fontWeight:700,background:`${stCol}15`,color:stCol,border:`1px solid ${stCol}30` }}>
+                              {isAppr ? 'Approved' : isRej ? 'Rejected' : 'Pending'}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div style={{ fontSize:12,color:"#64748B" }}>
                         {new Date(ad.date).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"})}

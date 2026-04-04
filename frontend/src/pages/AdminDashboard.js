@@ -892,6 +892,7 @@ const AdminDashboard = () => {
     const [boardingStatusFilter, setBoardingStatusFilter] = useState('All');
     const [boardingTypeFilter, setBoardingTypeFilter] = useState('All');
     const [selectedBoardingEdit, setSelectedBoardingEdit] = useState(null);
+    const [boardingNewMedia, setBoardingNewMedia] = useState([]);
     const [boardingToDelete, setBoardingToDelete] = useState(null);
     const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState([]);
@@ -1154,6 +1155,31 @@ const AdminDashboard = () => {
         }
     };
 
+    const removeExistingImage = (urlToRemove) => {
+        if (!selectedBoardingEdit) return;
+        setSelectedBoardingEdit({
+            ...selectedBoardingEdit,
+            images: selectedBoardingEdit.images.filter(url => url !== urlToRemove)
+        });
+    };
+
+    const removeExistingVideo = (urlToRemove) => {
+        if (!selectedBoardingEdit) return;
+        setSelectedBoardingEdit({
+            ...selectedBoardingEdit,
+            videos: selectedBoardingEdit.videos.filter(url => url !== urlToRemove)
+        });
+    };
+
+    const handleMediaChange = (e) => {
+        const files = Array.from(e.target.files);
+        setBoardingNewMedia(prev => [...prev, ...files]);
+    };
+
+    const removeNewMedia = (index) => {
+        setBoardingNewMedia(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSaveBoardingEdit = async (e) => {
         e.preventDefault();
         try {
@@ -1168,10 +1194,31 @@ const AdminDashboard = () => {
             if (selectedBoardingEdit.distanceFromUniversity) {
                 formData.append('distanceFromUniversity', selectedBoardingEdit.distanceFromUniversity);
             }
+
+            // Handle existing media
+            if (selectedBoardingEdit.images && selectedBoardingEdit.images.length > 0) {
+                formData.append('existingImages', JSON.stringify(selectedBoardingEdit.images));
+            } else if (selectedBoardingEdit.images && selectedBoardingEdit.images.length === 0) {
+                formData.append('existingImages', "");
+            }
+
+            if (selectedBoardingEdit.videos && selectedBoardingEdit.videos.length > 0) {
+                formData.append('existingVideos', JSON.stringify(selectedBoardingEdit.videos));
+            } else if (selectedBoardingEdit.videos && selectedBoardingEdit.videos.length === 0) {
+                formData.append('existingVideos', "");
+            }
+
+            // Append new media
+            if (boardingNewMedia && boardingNewMedia.length > 0) {
+                boardingNewMedia.forEach(file => {
+                    formData.append('media', file);
+                });
+            }
             
             await api.put(`/boardings/update/${selectedBoardingEdit._id}`, formData);
             setSnackbar({ open: true, msg: 'Boarding details updated successfully!', severity: 'success' });
             setSelectedBoardingEdit(null);
+            setBoardingNewMedia([]);
             loadAdminData();
         } catch (err) {
             setSnackbar({ open: true, msg: 'Failed to update boarding.', severity: 'error' });
@@ -2211,7 +2258,7 @@ const AdminDashboard = () => {
                                                         <td className="px-5 py-4">
                                                             <div className="flex items-center gap-2">
                                                                 <Tooltip title="Edit Boarding">
-                                                                    <IconButton size="small" onClick={() => setSelectedBoardingEdit(b)} sx={{ color: '#06b6d4', background: 'rgba(6,182,212,0.08)', '&:hover': { background: 'rgba(6,182,212,0.15)' } }}>
+                                                                    <IconButton size="small" onClick={() => { setSelectedBoardingEdit(b); setBoardingNewMedia([]); }} sx={{ color: '#06b6d4', background: 'rgba(6,182,212,0.08)', '&:hover': { background: 'rgba(6,182,212,0.15)' } }}>
                                                                         <EditIcon sx={{ fontSize: 16 }} />
                                                                     </IconButton>
                                                                 </Tooltip>
@@ -2475,6 +2522,66 @@ const AdminDashboard = () => {
                                         onChange={e => setSelectedBoardingEdit({...selectedBoardingEdit, description: e.target.value})}
                                         className="w-full px-4 py-2.5 rounded-xl text-sm font-medium outline-none transition-all min-h-[80px] resize-none"
                                         style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', border: `1px solid ${cardBorder}`, color: textPrimary }}
+                                    />
+                                </div>
+                                {/* Media Edit Section */}
+                                <div className="space-y-3 pt-2">
+                                    <label className="text-[10px] font-black uppercase tracking-widest ml-1" style={{ color: textSecondary }}>Property Media</label>
+                                    
+                                    {/* Existing Media */}
+                                    {((selectedBoardingEdit.images && selectedBoardingEdit.images.length > 0) || (selectedBoardingEdit.videos && selectedBoardingEdit.videos.length > 0)) && (
+                                        <div className="grid grid-cols-4 gap-2 mb-3">
+                                            {selectedBoardingEdit.images?.map((url, i) => (
+                                                <div key={`exist-img-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border" style={{ borderColor: cardBorder }}>
+                                                    <img src={url} alt={`Property ${i}`} className="w-full h-full object-cover" />
+                                                    <button type="button" onClick={() => removeExistingImage(url)} className="absolute top-1 right-1 bg-red-500 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <CloseIcon sx={{ fontSize: 12 }} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                            {selectedBoardingEdit.videos?.map((url, i) => (
+                                                <div key={`exist-vid-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border flex items-center justify-center bg-black/10" style={{ borderColor: cardBorder }}>
+                                                    <video src={url} className="w-full h-full object-cover opacity-50" />
+                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                        <span className="text-white bg-black/50 px-1 rounded text-[8px] font-bold">VIDEO</span>
+                                                    </div>
+                                                    <button type="button" onClick={() => removeExistingVideo(url)} className="absolute top-1 right-1 bg-red-500 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <CloseIcon sx={{ fontSize: 12 }} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* New Media Preview */}
+                                    {boardingNewMedia.length > 0 && (
+                                        <div className="grid grid-cols-4 gap-2 mb-3">
+                                            {boardingNewMedia.map((file, i) => (
+                                                <div key={`new-media-${i}`} className="relative group aspect-square rounded-lg overflow-hidden border border-cyan-500/50">
+                                                    {file.type.startsWith('image/') ? (
+                                                        <img src={URL.createObjectURL(file)} alt={`New ${i}`} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-cyan-500/10 flex items-center justify-center">
+                                                            <span className="text-cyan-500 text-[8px] font-bold px-1 bg-cyan-500/20 rounded">NEW VIDEO</span>
+                                                        </div>
+                                                    )}
+                                                    <button type="button" onClick={() => removeNewMedia(i)} className="absolute top-1 right-1 bg-red-500 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <CloseIcon sx={{ fontSize: 12 }} />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Upload Input */}
+                                    <input
+                                        type="file"
+                                        multiple
+                                        name="media"
+                                        accept="image/*,video/*"
+                                        onChange={handleMediaChange}
+                                        className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-cyan-50 file:text-cyan-600 hover:file:bg-cyan-100 transition-all border rounded-xl p-1.5"
+                                        style={{ background: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)', borderColor: cardBorder }}
                                     />
                                 </div>
                                 <div className="grid grid-cols-2 gap-3 pt-2">

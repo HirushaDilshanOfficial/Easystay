@@ -227,38 +227,64 @@ const updateBoarding = async (req, res) => {
             });
         }
 
-        // Parse facilities if provided as string
+        // Parse files/arrays if provided as strings (common for form-data)
         if (req.body.facilities && typeof req.body.facilities === "string") {
-            req.body.facilities = req.body.facilities.split(",").map((f) => f.trim());
+            req.body.facilities = req.body.facilities.split(",").map((f) => f.trim()).filter(f => f);
         }
 
-        // Handle newly uploaded files (if any)
-        if (req.files) {
-            const newImages = [];
-            const newVideos = [];
+        // Handle granular image management (existing vs new)
+        let finalImages = [];
+        let finalVideos = [];
 
-            // Combine all files from all fields (slip, nic, media) for gallery processing if desired
-            // Or just process 'media' field for the gallery
+        // 1. Start with existing images if provided by frontend
+        if (req.body.existingImages !== undefined) {
+            if (Array.isArray(req.body.existingImages)) {
+                finalImages = req.body.existingImages;
+            } else if (typeof req.body.existingImages === "string") {
+                finalImages = req.body.existingImages.split(",").map(i => i.trim()).filter(i => i);
+            } else {
+                finalImages = [req.body.existingImages];
+            }
+        } else if (!req.files || !req.files['media']) {
+            // If no existing list sent AND no new files, keep old ones
+            finalImages = boarding.images || [];
+        }
+
+        // 2. Start with existing videos if provided
+        if (req.body.existingVideos !== undefined) {
+            if (Array.isArray(req.body.existingVideos)) {
+                finalVideos = req.body.existingVideos;
+            } else if (typeof req.body.existingVideos === "string") {
+                finalVideos = req.body.existingVideos.split(",").map(v => v.trim()).filter(v => v);
+            } else {
+                finalVideos = [req.body.existingVideos];
+            }
+        } else if (!req.files || !req.files['media']) {
+            finalVideos = boarding.videos || [];
+        }
+
+        // 3. Handle newly uploaded files
+        if (req.files) {
             const mediaFiles = req.files['media'] || [];
             const slipFiles = req.files['slip'] || [];
             const nicFiles = req.files['nic'] || [];
 
-            [...mediaFiles, ...slipFiles, ...nicFiles].forEach((file) => {
+            mediaFiles.forEach((file) => {
                 const isVideo = file.mimetype?.startsWith('video/') || file.originalname.match(/\.(mp4|mov|avi|mkv)$/i);
-
                 if (isVideo) {
-                    newVideos.push(file.path);
+                    finalVideos.push(file.path);
                 } else {
-                    newImages.push(file.path);
+                    finalImages.push(file.path);
                 }
             });
 
             if (slipFiles.length > 0) req.body.depositSlip = slipFiles[0].path;
             if (nicFiles.length > 0) req.body.nicPhoto = nicFiles[0].path;
-
-            if (newImages.length > 0) req.body.images = [...(boarding.images || []), ...newImages];
-            if (newVideos.length > 0) req.body.videos = [...(boarding.videos || []), ...newVideos];
         }
+
+        // Set the final arrays back to body for update
+        req.body.images = finalImages;
+        req.body.videos = finalVideos;
 
         const updatedBoarding = await Boarding.findByIdAndUpdate(
             req.params.id,

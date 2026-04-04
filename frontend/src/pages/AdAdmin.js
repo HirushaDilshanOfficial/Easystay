@@ -89,6 +89,7 @@ export default function AdAdmin({ hideSidebar = false }) {
   ads.forEach(a => { if (counts[a.packageType] !== undefined) counts[a.packageType]++; });
 
   const pending = ads.filter(a => a.status === "pending");
+  const approvedAds = ads.filter(a => a.status === "approved");
   const shown   = ads.filter(a =>
     (fStatus === "all" || a.status === fStatus) &&
     (a.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -98,6 +99,7 @@ export default function AdAdmin({ hideSidebar = false }) {
 
   const NAV = [
     { id: "pending", label: "Pending Review",    badge: pending.length },
+    { id: "approved",label: "Approved Ads",      badge: approvedAds.length },
     { id: "all",     label: "All Advertisements" },
   ];
 
@@ -186,17 +188,19 @@ export default function AdAdmin({ hideSidebar = false }) {
       <main style={{ marginLeft: hideSidebar ? 0 : 230, flex:1, padding: hideSidebar ? "0 0 40px": "32px 32px 60px", position:"relative", zIndex:1 }}>
 
         {/* Page Header */}
-        <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:24 }}>
+        <div style={{ display:"flex",alignItems:"flex-start",justifyContent:"space-between",marginBottom:!hideSidebar ? 24 : 16, paddingTop: hideSidebar ? 24 : 0, paddingLeft: hideSidebar ? 24 : 0, paddingRight: hideSidebar ? 24 : 0 }}>
           <div>
             <div style={{ fontSize:11,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6 }}>
               {tab === "pending" ? "Review Queue" : "Ad Management"}
             </div>
             <h1 style={{ fontFamily:"'Bricolage Grotesque',sans-serif",fontSize:28,fontWeight:800,color:"#0F172A",letterSpacing:"-0.04em",lineHeight:1.1 }}>
-              {tab === "pending" ? "Pending Approvals" : "All Advertisements"}
+              {tab === "pending" ? "Pending Approvals" : tab === "approved" ? "Approved Advertisements" : "All Advertisements"}
             </h1>
             <p style={{ fontSize:13,color:"#64748B",marginTop:5,fontWeight:500 }}>
               {tab === "pending"
                 ? `${pending.length} ad${pending.length !== 1 ? "s" : ""} awaiting review`
+                : tab === "approved" 
+                ? `${approvedAds.length} approved ad${approvedAds.length !== 1 ? "s" : ""}`
                 : `${ads.length} total advertisements in the system`}
             </p>
           </div>
@@ -209,6 +213,30 @@ export default function AdAdmin({ hideSidebar = false }) {
           </button>
         </div>
 
+        {/* ── INLINE NAV FOR WHEN SIDEBAR IS HIDDEN ── */}
+        {hideSidebar && (
+          <div style={{ display:"flex", gap:8, marginBottom:24, borderBottom:"1px solid rgba(37,99,235,0.1)", paddingBottom:12, paddingLeft: 24, paddingRight: 24, overflowX:"auto" }}>
+            {NAV.map(({ id, label, badge }) => (
+              <button key={id} onClick={() => setTab(id)}
+                style={{
+                  padding:"8px 16px", borderRadius:8, border:"none", cursor:"pointer",
+                  fontSize:13, fontWeight:700, transition:"all 0.18s",
+                  background: tab === id ? "rgba(37,99,235,0.1)" : "transparent",
+                  color: tab === id ? "#2563EB" : "#64748B",
+                  display:"flex", alignItems:"center", gap:8, whiteSpace:"nowrap"
+                }}>
+                {label}
+                {badge > 0 && (
+                  <span style={{ background:"#D97706",color:"#fff",fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:20 }}>
+                    {badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div style={{ padding: hideSidebar ? "0 24px" : "0" }}>
         {/* ── STATS CARDS (always visible) ── */}
         <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))",gap:14,marginBottom:30 }}>
           {STATS.map(s => (
@@ -276,6 +304,56 @@ export default function AdAdmin({ hideSidebar = false }) {
                           <button onClick={() => { setRejectAd(ad); setNote(""); }}
                             style={{ padding:"9px 14px",borderRadius:8,border:`1px solid ${C.rejected}35`,background:"#FEF2F2",color:C.rejected,fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:"-0.01em" }}>
                             Reject
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
+        )}
+
+        {/* ══ APPROVED ══ */}
+        {tab === "approved" && (
+          <div style={{ animation:"fU 0.35s ease" }}>
+            {loading ? <Loader />
+              : approvedAds.length === 0 ? <Empty title="No Approved Ads" sub="There are no approved advertisements currently." />
+              : (
+                <div style={{ display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:18 }}>
+                  {approvedAds.map(ad => (
+                    <div key={ad._id} className="adcard"
+                      style={{ background:"#FFFFFF",border:"1px solid rgba(37,99,235,0.1)",borderRadius:16,overflow:"hidden",transition:"all 0.22s",boxShadow:"0 2px 10px rgba(37,99,235,0.06)" }}>
+                      {ad.imageUrl
+                        ? <img src={ad.imageUrl} alt="" style={{ width:"100%",height:150,objectFit:"cover" }} />
+                        : <div style={{ height:100,background:"#F8FAFF",display:"flex",alignItems:"center",justifyContent:"center" }}>
+                            <div style={{ width:32,height:32,borderRadius:8,background:"rgba(37,99,235,0.1)" }} />
+                          </div>
+                      }
+                      <div style={{ padding:"18px 20px" }}>
+                        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8 }}>
+                          <div style={{ fontFamily:"'Bricolage Grotesque',sans-serif",fontSize:15,fontWeight:800,color:"#0F172A",letterSpacing:"-0.02em" }}>{ad.name}</div>
+                          <PkgBadge pkg={ad.packageType} />
+                        </div>
+                        <div style={{ fontSize:12,color:"#64748B",marginBottom:12,lineHeight:1.65,fontWeight:500,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" }}>
+                          {ad.description}
+                        </div>
+                        <div style={{ display:"flex",gap:18,marginBottom:14,fontSize:12,color:"#94A3B8",fontWeight:600 }}>
+                          <span>{ad.phoneNumber}</span>
+                          <span>LKR {Number(ad.price).toLocaleString()}</span>
+                        </div>
+                        <div style={{ display:"flex",gap:8 }}>
+                          <button onClick={() => { setViewAd(ad); setViewSource("all"); }}
+                            style={{ flex:1,padding:"9px 0",borderRadius:8,border:"1px solid rgba(37,99,235,0.2)",background:"#EFF6FF",color:"#2563EB",fontSize:12,fontWeight:700,cursor:"pointer",transition:"all 0.18s",letterSpacing:"-0.01em" }}>
+                            View Details
+                          </button>
+                          <button onClick={() => { setRejectAd(ad); setNote(""); }}
+                            style={{ padding:"9px 14px",borderRadius:8,border:`1px solid rgba(220,38,38,0.25)`,background:"#FEF2F2",color:"#DC2626",fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:"-0.01em",transition:"all 0.18s" }}>
+                            Reject
+                          </button>
+                          <button onClick={() => setDeleteAd(ad)}
+                            style={{ padding:"9px 14px",borderRadius:8,border:`1px solid rgba(220,38,38,0.35)`,background:"#DC2626",color:"#FFFFFF",fontSize:12,fontWeight:700,cursor:"pointer",letterSpacing:"-0.01em",transition:"all 0.18s",boxShadow:"0 3px 10px rgba(220,38,38,0.3)" }}>
+                            Delete
                           </button>
                         </div>
                       </div>
@@ -366,6 +444,7 @@ export default function AdAdmin({ hideSidebar = false }) {
             )}
           </div>
         )}
+        </div>
       </main>
 
       {/* ══ VIEW MODAL ══ */}

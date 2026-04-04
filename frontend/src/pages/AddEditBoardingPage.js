@@ -44,6 +44,8 @@ const AddEditBoardingPage = ({ onClose, editId }) => {
     }, [isAddMode, user, formData.ownerId]);
 
     const [facilities, setFacilities] = useState([]);
+    const [existingImages, setExistingImages] = useState([]);
+    const [existingVideos, setExistingVideos] = useState([]);
     const [mediaFiles, setMediaFiles] = useState(null);
     const [slipFile, setSlipFile] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -72,6 +74,8 @@ const AddEditBoardingPage = ({ onClose, editId }) => {
                         ownerEmail: p.ownerEmail || '',
                     });
                     setFacilities(p.facilities || []);
+                    setExistingImages(p.images || []);
+                    setExistingVideos(p.videos || []);
                 } catch (err) {
                     setError('Failed to fetch boarding details.');
                     console.error(err);
@@ -101,6 +105,14 @@ const AddEditBoardingPage = ({ onClose, editId }) => {
         setMediaFiles(e.target.files);
     };
 
+    const removeExistingImage = (url) => {
+        setExistingImages(existingImages.filter(img => img !== url));
+    };
+
+    const removeExistingVideo = (url) => {
+        setExistingVideos(existingVideos.filter(vid => vid !== url));
+    };
+
     const handleSlipChange = (e) => {
         setSlipFile(e.target.files[0]);
     };
@@ -117,6 +129,22 @@ const AddEditBoardingPage = ({ onClose, editId }) => {
         });
         // Append array
         facilities.forEach(f => submitData.append('facilities', f));
+        
+        // Append existing media to keep
+        if (!isAddMode) {
+            if (existingImages.length === 0) {
+                submitData.append('existingImages', '');
+            } else {
+                existingImages.forEach(img => submitData.append('existingImages', img));
+            }
+
+            if (existingVideos.length === 0) {
+                submitData.append('existingVideos', '');
+            } else {
+                existingVideos.forEach(vid => submitData.append('existingVideos', vid));
+            }
+        }
+
         // Append Media Files
         if (mediaFiles) {
             for (let i = 0; i < mediaFiles.length; i++) {
@@ -296,34 +324,85 @@ const AddEditBoardingPage = ({ onClose, editId }) => {
                         </label>
                     </div>
 
-                    {/* Payment Info */}
-                    <div className="col-span-1 md:col-span-2 mt-4 pt-6 border-t border-slate-100">
-                        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
-                            <h3 className="text-amber-800 font-extrabold text-lg mb-2">Listing Fee Validation</h3>
-                            <p className="text-amber-700 text-sm mb-4 font-medium">Please deposit the listing fee of <strong>LKR 7,499.00</strong> to the following account:</p>
-                            
-                            <div className="bg-white/60 border border-amber-200/50 rounded-xl p-4 mb-4 font-mono text-sm text-amber-900 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div><span className="font-bold block text-xs uppercase text-amber-700/70">Account Holder</span> EasyStay Holdings</div>
-                                <div><span className="font-bold block text-xs uppercase text-amber-700/70">Bank Name</span> BOC (Kollupitiya Branch)</div>
-                                <div className="sm:col-span-2"><span className="font-bold block text-xs uppercase text-amber-700/70">Account Number</span> 876 543 210</div>
-                            </div>
+                    {/* Payment Info - Only show in Add Mode */}
+                    {isAddMode && (
+                        <div className="col-span-1 md:col-span-2 mt-4 pt-6 border-t border-slate-100">
+                            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
+                                <h3 className="text-amber-800 font-extrabold text-lg mb-2">Listing Fee Validation</h3>
+                                <p className="text-amber-700 text-sm mb-4 font-medium">Please deposit the listing fee of <strong>LKR 7,499.00</strong> to the following account:</p>
+                                
+                                <div className="bg-white/60 border border-amber-200/50 rounded-xl p-4 mb-4 font-mono text-sm text-amber-900 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div><span className="font-bold block text-xs uppercase text-amber-700/70">Account Holder</span> EasyStay Holdings</div>
+                                    <div><span className="font-bold block text-xs uppercase text-amber-700/70">Bank Name</span> BOC (Kollupitiya Branch)</div>
+                                    <div className="sm:col-span-2"><span className="font-bold block text-xs uppercase text-amber-700/70">Account Number</span> 876 543 210</div>
+                                </div>
 
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-amber-900 block">Upload Deposit Slip * <span className="font-normal text-amber-700">(PDF or Image)</span></label>
-                                <input type="file" name="slip" onChange={handleSlipChange} required={isAddMode} accept="image/*,.pdf" 
-                                    className="w-full text-sm text-amber-800 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-amber-200/50 file:text-amber-800 hover:file:bg-amber-200 block border border-amber-200 rounded-xl p-1.5 bg-white/50 transition-colors"
-                                />
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-amber-900 block">Upload Deposit Slip * <span className="font-normal text-amber-700">(PDF or Image)</span></label>
+                                    <input type="file" name="slip" onChange={handleSlipChange} required={isAddMode} accept="image/*,.pdf" 
+                                        className="w-full text-sm text-amber-800 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-amber-200/50 file:text-amber-800 hover:file:bg-amber-200 block border border-amber-200 rounded-xl p-1.5 bg-white/50 transition-colors"
+                                    />
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     {/* Media Upload */}
-                    <div className="col-span-1 md:col-span-2 space-y-2">
-                        <label className="text-sm font-bold text-slate-700 block">Upload Property Photos/Videos</label>
-                        <input type="file" multiple name="media" onChange={handleMediaChange} 
-                             className="w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 block border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50 hover:border-blue-400 transition-colors cursor-pointer"
-                        />
-                        {!isAddMode && <p className="text-xs font-semibold text-slate-400 mt-1">Note: Uploading new files will replace existing ones.</p>}
+                    <div className="col-span-1 md:col-span-2 space-y-4">
+                        <label className="text-sm font-bold text-slate-700 block">Property Photos/Videos</label>
+                        
+                        {/* Existing Media Display */}
+                        {!isAddMode && (existingImages.length > 0 || existingVideos.length > 0) && (
+                            <div className="space-y-3">
+                                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Current Media</p>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                    {existingImages.map((url, index) => (
+                                        <div key={`img-${index}`} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100">
+                                            <img src={url} alt={`Property ${index}`} className="w-full h-full object-cover" />
+                                            <button 
+                                                type="button"
+                                                onClick={() => removeExistingImage(url)}
+                                                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                                                title="Remove Image"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                    {existingVideos.map((url, index) => (
+                                        <div key={`vid-${index}`} className="relative group aspect-square rounded-xl overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
+                                            <video src={url} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <button 
+                                                type="button"
+                                                onClick={() => removeExistingVideo(url)}
+                                                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:bg-red-600"
+                                                title="Remove Video"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">{!isAddMode ? 'Add New Media' : 'Upload Photos/Videos'}</p>
+                            <input type="file" multiple name="media" onChange={handleMediaChange} 
+                                className="w-full text-sm text-slate-500 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700 block border-2 border-dashed border-slate-200 rounded-2xl p-4 bg-slate-50 hover:border-blue-400 transition-colors cursor-pointer"
+                            />
+                            {!isAddMode && <p className="text-xs font-semibold text-slate-400 mt-1">Note: New files will be added to the existing collection (unless removed above).</p>}
+                        </div>
                     </div>
 
                 </div>

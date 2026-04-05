@@ -195,7 +195,13 @@ const SignupForm = () => {
                 }
             }
         } catch (err) {
-            setError(err.response?.data?.error || 'Signup failed. Please check your details and try again.');
+            if (err.response) {
+                setError(err.response.data?.error || 'Signup failed. Please check your details and try again.');
+            } else if (err.request) {
+                setError('Signup failed because the backend is not responding. Please make sure the API server is running.');
+            } else {
+                setError(err.message || 'Signup failed. Please check your details and try again.');
+            }
         } finally {
             setLoading(false);
         }

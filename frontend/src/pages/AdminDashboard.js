@@ -70,7 +70,7 @@ const DUMMY_CHART_DATA = [
 
 const getDocUrl = (path) => {
     if (!path) return '';
-    return path.startsWith('http') ? path : `http://localhost:5001/uploads/${path}`;
+    return path.startsWith('http') ? path : `http://localhost:5000/uploads/${path}`;
 };
 
 

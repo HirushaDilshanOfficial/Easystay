@@ -1,36 +1,35 @@
-import Review, { find, findByIdAndUpdate } from "../models/Review";
+const Review = require('../models/ReviewModel');
 
-export async function submitReview(req, res) {
-  try {
+// GET /api/reviews/:boardingId — get all reviews for a specific boarding
+exports.getReviews = async (req, res) => {
+    try {
+        const reviews = await Review.find({ boardingId: req.params.boardingId }).sort({ createdAt: -1 });
+        res.json({ success: true, data: reviews });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to fetch reviews.' });
+    }
+};
 
-    const review = new Review(req.body);
-    await review.save();
+// POST /api/reviews/:boardingId — submit a review for a specific boarding
+exports.addReview = async (req, res) => {
+    try {
+        const { userName, userEmail, rating, comment, isAnonymous } = req.body;
+        if (!userName || !userEmail || !rating || !comment) {
+            return res.status(400).json({ success: false, message: 'All fields are required.' });
+        }
 
-    res.status(201).json({
-      message: "Review submitted successfully",
-      review
-    });
+        const review = await Review.create({
+            boardingId: req.params.boardingId,
+            userName: isAnonymous === true || isAnonymous === 'true' ? 'Anonymous' : userName,
+            originalUserName: userName,
+            isAnonymous: isAnonymous === true || isAnonymous === 'true',
+            userEmail,
+            rating: Number(rating),
+            comment
+        });
 
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-}
-
-export async function getReviews(req, res) {
-
-  const reviews = await find({ approved: true });
-
-  res.json(reviews);
-
-}
-
-export async function approveReview(req, res) {
-
-  const review = await findByIdAndUpdate(
-    req.params.id,
-    { approved: true },
-    { new: true }
-  );
-
-  res.json(review);
-}
+        res.status(201).json({ success: true, data: review });
+    } catch (err) {
+        res.status(500).json({ success: false, message: 'Failed to submit review.' });
+    }
+};

@@ -957,45 +957,54 @@ const Dashboard = () => {
 
                                                     <Box sx={{ 
                                                         p: 2, 
-                                                        bgcolor: (profile?.loyaltyPoints >= 12) ? '#fffbeb' : '#f9fafb', 
+                                                        bgcolor: (profile?.loyaltyPoints > 0) ? '#fffbeb' : '#f9fafb', 
                                                         border: '1px solid',
-                                                        borderColor: (profile?.loyaltyPoints >= 12) ? '#fef3c7' : '#e5e7eb',
+                                                        borderColor: (profile?.loyaltyPoints > 0) ? '#fef3c7' : '#e5e7eb',
                                                         borderRadius: 3,
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'space-between',
-                                                        opacity: (profile?.loyaltyPoints >= 12) ? 1 : 0.7
+                                                        opacity: (profile?.loyaltyPoints > 0) ? 1 : 0.7
                                                     }}>
                                                         <Box>
                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                                                                <StarsIcon sx={{ color: (profile?.loyaltyPoints >= 12) ? '#f59e0b' : '#9ca3af', fontSize: 18 }} />
-                                                                <Typography variant="body2" sx={{ fontWeight: 700, color: (profile?.loyaltyPoints >= 12) ? '#92400e' : '#6b7280' }}>
-                                                                    Redeem 12 Points
+                                                                <StarsIcon sx={{ color: (profile?.loyaltyPoints > 0) ? '#f59e0b' : '#9ca3af', fontSize: 18 }} />
+                                                                <Typography variant="body2" sx={{ fontWeight: 700, color: (profile?.loyaltyPoints > 0) ? '#92400e' : '#6b7280' }}>
+                                                                    Redeem Loyalty Points
                                                                 </Typography>
                                                             </Box>
-                                                            <Typography variant="caption" sx={{ color: (profile?.loyaltyPoints >= 12) ? '#b45309' : '#9ca3af', display: 'block' }}>
-                                                                {profile?.loyaltyPoints >= 12 
-                                                                    ? "Available! Save LKR 1,200 on this payment" 
-                                                                    : `Need ${12 - (profile?.loyaltyPoints || 0)} more points to redeem`}
+                                                            <Typography variant="caption" sx={{ color: (profile?.loyaltyPoints > 0) ? '#b45309' : '#9ca3af', display: 'block' }}>
+                                                                {profile?.loyaltyPoints > 0 
+                                                                    ? `You have ${profile?.loyaltyPoints} points available (1 pt = LKR 100)` 
+                                                                    : `You need to earn points to get a discount!`}
                                                             </Typography>
                                                         </Box>
-                                                        <input 
-                                                            type="checkbox" 
-                                                            disabled={!profile || profile.loyaltyPoints < 12}
-                                                            className="w-6 h-6 accent-amber-500 cursor-pointer disabled:cursor-not-allowed"
-                                                            checked={paymentData.pointsUsed === 12}
-                                                            onChange={(e) => {
-                                                                const checked = e.target.checked;
-                                                                const basePrice = myBoarding?.boardingId?.pricePerMonth || 0;
-                                                                const pts = checked ? 12 : 0;
-                                                                setPaymentData({ 
-                                                                    ...paymentData, 
-                                                                    pointsUsed: pts,
-                                                                    useReward: checked,
-                                                                    amount: basePrice - (pts * 100)
-                                                                });
-                                                            }}
-                                                        />
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <input 
+                                                                type="number" 
+                                                                min="0"
+                                                                max={profile?.loyaltyPoints || 0}
+                                                                disabled={!profile || profile.loyaltyPoints === 0}
+                                                                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-gray-100 disabled:text-gray-400"
+                                                                value={paymentData.pointsUsed === 0 ? '' : paymentData.pointsUsed}
+                                                                placeholder="0"
+                                                                onChange={(e) => {
+                                                                    let pts = parseInt(e.target.value);
+                                                                    if (isNaN(pts)) pts = 0;
+                                                                    if (pts > (profile?.loyaltyPoints || 0)) pts = profile.loyaltyPoints;
+                                                                    if (pts < 0) pts = 0;
+                                                                    
+                                                                    const basePrice = myBoarding?.boardingId?.pricePerMonth || 0;
+                                                                    setPaymentData({ 
+                                                                        ...paymentData, 
+                                                                        pointsUsed: pts,
+                                                                        useReward: pts > 0,
+                                                                        amount: basePrice - (pts * 100)
+                                                                    });
+                                                                }}
+                                                            />
+                                                            <Typography variant="caption" sx={{ color: '#6b7280', fontWeight: 600 }}>Pts</Typography>
+                                                        </Box>
                                                     </Box>
                                                     
                                                     <Box>

@@ -7,13 +7,20 @@ const User = require("../models/User");
 // @access  Owner
 const addTenancy = async (req, res) => {
     try {
-        const { studentEmail, studentName, studentPhone, boardingId, ownerId } = req.body;
+        const { studentName, studentPhone, boardingId, ownerId } = req.body;
+        const studentEmail = req.body.studentEmail.trim().toLowerCase();
 
         // Check if boarding exists and belongs to owner
         const boarding = await Boarding.findById(boardingId);
         if (!boarding) {
             return res.status(404).json({ success: false, message: "Boarding not found" });
         }
+
+        // Deactivate all previous active tenancies for this student
+        await Tenancy.updateMany(
+            { studentEmail, status: "Active" },
+            { $set: { status: "Past" } }
+        );
 
         const tenancy = await Tenancy.create({
             studentEmail,
@@ -25,7 +32,7 @@ const addTenancy = async (req, res) => {
 
         // Reset the student's loyalty points to 0 for the new boarding
         await User.findOneAndUpdate(
-            { email: studentEmail.toLowerCase() },
+            { email: studentEmail },
             { $set: { loyaltyPoints: 0 } }
         );
 

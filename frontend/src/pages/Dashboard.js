@@ -950,12 +950,8 @@ const Dashboard = () => {
                                                         label="Amount (LKR)"
                                                         required
                                                         value={paymentData.amount}
-                                                        onChange={(e) => {
-                                                            const val = e.target.value.replace(/\D/g, '');
-                                                            setPaymentData({ ...paymentData, amount: val });
-                                                        }}
                                                         variant="outlined"
-                                                        InputProps={{ sx: { borderRadius: 3 } }}
+                                                        InputProps={{ readOnly: true, sx: { borderRadius: 3, bgcolor: '#f8fafc' } }}
                                                         helperText={paymentData.useReward ? `Discount LKR 1,200 applied!` : ""}
                                                     />
 
@@ -995,6 +991,7 @@ const Dashboard = () => {
                                                                 setPaymentData({ 
                                                                     ...paymentData, 
                                                                     pointsUsed: pts,
+                                                                    useReward: checked,
                                                                     amount: basePrice - (pts * 100)
                                                                 });
                                                             }}

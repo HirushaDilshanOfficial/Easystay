@@ -23,6 +23,12 @@ const addTenancy = async (req, res) => {
             ownerId,
         });
 
+        // Reset the student's loyalty points to 0 for the new boarding
+        await User.findOneAndUpdate(
+            { email: studentEmail.toLowerCase() },
+            { $set: { loyaltyPoints: 0 } }
+        );
+
         res.status(201).json({
             success: true,
             data: tenancy,

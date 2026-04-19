@@ -952,39 +952,39 @@ const Dashboard = () => {
                                                         value={paymentData.amount}
                                                         variant="outlined"
                                                         InputProps={{ readOnly: true, sx: { borderRadius: 3, bgcolor: '#f8fafc' } }}
-                                                        helperText={paymentData.useReward ? `Discount LKR 1,200 applied!` : ""}
+                                                        helperText={paymentData.useReward ? `Discount LKR ${(paymentData.pointsUsed * 100).toLocaleString()} applied!` : ""}
                                                     />
 
                                                     <Box sx={{ 
                                                         p: 2, 
-                                                        bgcolor: (profile?.loyaltyPoints > 0) ? '#fffbeb' : '#f9fafb', 
+                                                        bgcolor: (profile?.loyaltyPoints >= 12) ? '#fffbeb' : '#f9fafb', 
                                                         border: '1px solid',
-                                                        borderColor: (profile?.loyaltyPoints > 0) ? '#fef3c7' : '#e5e7eb',
+                                                        borderColor: (profile?.loyaltyPoints >= 12) ? '#fef3c7' : '#e5e7eb',
                                                         borderRadius: 3,
                                                         display: 'flex',
                                                         alignItems: 'center',
                                                         justifyContent: 'space-between',
-                                                        opacity: (profile?.loyaltyPoints > 0) ? 1 : 0.7
+                                                        opacity: (profile?.loyaltyPoints >= 12) ? 1 : 0.7
                                                     }}>
                                                         <Box>
                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 0.5 }}>
-                                                                <StarsIcon sx={{ color: (profile?.loyaltyPoints > 0) ? '#f59e0b' : '#9ca3af', fontSize: 18 }} />
-                                                                <Typography variant="body2" sx={{ fontWeight: 700, color: (profile?.loyaltyPoints > 0) ? '#92400e' : '#6b7280' }}>
+                                                                <StarsIcon sx={{ color: (profile?.loyaltyPoints >= 12) ? '#f59e0b' : '#9ca3af', fontSize: 18 }} />
+                                                                <Typography variant="body2" sx={{ fontWeight: 700, color: (profile?.loyaltyPoints >= 12) ? '#92400e' : '#6b7280' }}>
                                                                     Redeem Loyalty Points
                                                                 </Typography>
                                                             </Box>
-                                                            <Typography variant="caption" sx={{ color: (profile?.loyaltyPoints > 0) ? '#b45309' : '#9ca3af', display: 'block' }}>
-                                                                {profile?.loyaltyPoints > 0 
+                                                            <Typography variant="caption" sx={{ color: (profile?.loyaltyPoints >= 12) ? '#b45309' : '#9ca3af', display: 'block' }}>
+                                                                {profile?.loyaltyPoints >= 12 
                                                                     ? `You have ${profile?.loyaltyPoints} points available (1 pt = LKR 100)` 
-                                                                    : `You need to earn points to get a discount!`}
+                                                                    : `You need at least 12 points to start getting discounts!`}
                                                             </Typography>
                                                         </Box>
                                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                             <input 
                                                                 type="number" 
-                                                                min="0"
+                                                                min={0}
                                                                 max={profile?.loyaltyPoints || 0}
-                                                                disabled={!profile || profile.loyaltyPoints === 0}
+                                                                disabled={!profile || profile.loyaltyPoints < 12}
                                                                 className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 disabled:bg-gray-100 disabled:text-gray-400"
                                                                 value={paymentData.pointsUsed === 0 ? '' : paymentData.pointsUsed}
                                                                 placeholder="0"

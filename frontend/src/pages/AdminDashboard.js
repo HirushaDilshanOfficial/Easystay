@@ -242,8 +242,8 @@ function UserDetailModal({ user: u, onClose, onStatusUpdate, darkMode }) {
                                 <InfoRow icon={LocationIcon} label="Address" value={u.address} color="#10b981" />
                             </>
                         )}
-                        <InfoRow icon={PersonIcon} label="Status" value={u.status} color={
-                            u.status === 'Active' ? '#34d399' : u.status === 'Pending' ? '#fbbf24' : '#f87171'
+                        <InfoRow icon={PersonIcon} label="Status" value={u.role === 'Student' && !u.isVerified ? 'Not Verified' : u.status} color={
+                            (u.role === 'Student' && !u.isVerified) ? '#94a3b8' : u.status === 'Active' ? '#34d399' : u.status === 'Pending' ? '#fbbf24' : '#f87171'
                         } />
                         <InfoRow icon={TimeIcon} label="Joined" value={new Date(u.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} color="#94a3b8" />
                     </div>
@@ -1831,9 +1831,9 @@ const AdminDashboard = () => {
                                                         <td className="px-5 py-3.5">
                                                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-lg"
                                                                 style={{
-                                                                    background: row.status === 'Active' ? 'rgba(16,185,129,0.12)' : row.status === 'Pending' ? 'rgba(245,158,11,0.12)' : row.status === 'Inactive' ? 'rgba(148,163,184,0.12)' : 'rgba(239,68,68,0.12)',
-                                                                    color: row.status === 'Active' ? '#34d399' : row.status === 'Pending' ? '#fbbf24' : row.status === 'Inactive' ? '#94a3b8' : '#f87171',
-                                                                }}>{row.status}</span>
+                                                                    background: row.role === 'Student' && !row.isVerified ? 'rgba(148,163,184,0.12)' : row.status === 'Active' ? 'rgba(16,185,129,0.12)' : row.status === 'Pending' ? 'rgba(245,158,11,0.12)' : row.status === 'Inactive' ? 'rgba(148,163,184,0.12)' : 'rgba(239,68,68,0.12)',
+                                                                    color: row.role === 'Student' && !row.isVerified ? '#94a3b8' : row.status === 'Active' ? '#34d399' : row.status === 'Pending' ? '#fbbf24' : row.status === 'Inactive' ? '#94a3b8' : '#f87171',
+                                                                }}>{row.role === 'Student' && !row.isVerified ? 'Not Verified' : row.status}</span>
                                                         </td>
                                                         <td className="px-5 py-3.5">
                                                             <div className="flex items-center gap-2">

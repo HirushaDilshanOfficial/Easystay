@@ -26,6 +26,9 @@ exports.uploadPaymentSlip = async (req, res) => {
         let ptsToUse = parseInt(req.body.pointsUsed) || 0;
 
         if (ptsToUse > 0) {
+            if (student.loyaltyPoints < 12) {
+                return res.status(400).json({ success: false, message: "Minimum 12 points required to start redemption" });
+            }
             if (student.loyaltyPoints >= ptsToUse) {
                 isRewardUsed = true;
                 discountAmount = ptsToUse * 100;

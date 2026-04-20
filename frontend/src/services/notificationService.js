@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authService from './authService';
 
-const API_URL = 'http://localhost:5001/api/notifications';
+const API_URL = 'http://localhost:5000/api/notifications';
 
 const getNotifications = async () => {
     const user = authService.getCurrentUser();

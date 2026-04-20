@@ -723,10 +723,10 @@ const Dashboard = () => {
                                                         <img 
                                                             src={myBoarding?.boardingId?.images?.[0] 
                                                                 ? (myBoarding.boardingId.images[0].startsWith('http') 
-                                                                    ? myBoarding.boardingId.images[0] 
+                                                                    ? myBoarding.boardingId.images[0]
                                                                     : (myBoarding.boardingId.images[0].startsWith('uploads/') 
-                                                                        ? `http://localhost:5001/${myBoarding.boardingId.images[0]}`
-                                                                        : `http://localhost:5001/uploads/${myBoarding.boardingId.images[0]}`))
+                                                                        ? `http://localhost:5000/${myBoarding.boardingId.images[0]}`
+                                                                        : `http://localhost:5000/uploads/${myBoarding.boardingId.images[0]}`))
                                                                 : 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1073&q=80'} 
                                                             alt={myBoarding?.boardingId?.title}
                                                             style={{ width: '100%', height: '100%', objectFit: 'cover' }}

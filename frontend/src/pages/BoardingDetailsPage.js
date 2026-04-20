@@ -59,7 +59,7 @@ const BoardingDetailsPage = () => {
     }
 
     const getFullImageUrl = (img) => {
-        return img.startsWith('http') ? img : `http://localhost:5001/uploads/${img}`;
+        return img.startsWith('http') ? img : `http://localhost:5000/uploads/${img}`;
     };
 
     return (

@@ -90,7 +90,7 @@ const SmartRoommateModal = ({ isOpen, onClose }) => {
                 msg = `Server Error [${err.response.status}]: ${err.response.data?.message || err.response.data?.error || 'No detail provided'}`;
             } else if (err.request) {
                 // The request was made but no response was received
-                msg = 'Network Error: The backend at http://localhost:5001 is not responding. Please ensure the backend server is running.';
+                msg = 'Network Error: The backend at http://localhost:5000 is not responding. Please ensure the backend server is running.';
             } else {
                 // Something happened in setting up the request that triggered an Error
                 msg = `Request Setup Error: ${err.message}`;

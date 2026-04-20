@@ -4,7 +4,7 @@ import { MapPin, Star } from 'lucide-react';
 
 const BoardingCard = ({ boarding }) => {
     const imageUrl = boarding.images && boarding.images.length > 0
-        ? (boarding.images[0].startsWith('http') ? boarding.images[0] : `http://localhost:5001/uploads/${boarding.images[0]}`)
+        ? (boarding.images[0].startsWith('http') ? boarding.images[0] : `http://localhost:5000/uploads/${boarding.images[0]}`)
         : 'https://via.placeholder.com/400x300?text=No+Image';
 
     return (

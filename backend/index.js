@@ -43,7 +43,7 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Root route for health check
 app.get('/', (req, res) => {
-    res.json({ message: 'Boarding Management System API is running on port 5001' });
+    res.json({ message: `Boarding Management System API is running on port ${PORT}` });
 });
 
 // Serve uploaded files statically
